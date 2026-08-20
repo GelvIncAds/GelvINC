@@ -1,0 +1,278 @@
+[
+  {
+    "id": "BR-085192",
+    "branchName": "GELV INC Advertising",
+    "branchCode": "GELV-01",
+    "requesterName": "Jade Sumalinog",
+    "requesterEmail": "jade.gelv8@gmail.com",
+    "requesterRole": "Main Operations Manager",
+    "requiredByDate": "2026-08-20",
+    "priority": "Normal",
+    "purpose": "Branch stock replenishment & local client installations",
+    "items": [
+      {
+        "itemId": "ad-101",
+        "itemTitle": "Heavy-Duty Outdoor Billboard Tarpaulin (13oz - 15oz)",
+        "category": "Tarpaulin",
+        "requestedQuantity": 1,
+        "dimensions": "10ft x 20ft Custom Grommeted Flex",
+        "unitPrice": 180
+      }
+    ],
+    "status": "Pending HQ Review",
+    "createdAt": "2026-08-15T01:24:45.192Z",
+    "updatedAt": "2026-08-15T01:24:45.192Z",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
+    "sentToEmails": [
+      "jade.gelv8@gmail.com",
+      "admin@gelvinc.com"
+    ]
+  },
+  {
+    "id": "BR-772466",
+    "branchName": "GELV INC Advertising",
+    "branchCode": "GELV-01",
+    "requesterName": "Jade Gelv8",
+    "requesterEmail": "jade.gelv8@gmail.com",
+    "requesterRole": "Main Operations Manager",
+    "requiredByDate": "2026-08-20",
+    "priority": "Normal",
+    "purpose": "Branch stock replenishment & local client installations",
+    "items": [
+      {
+        "itemId": "ad-101",
+        "itemTitle": "Heavy-Duty Outdoor Billboard Tarpaulin (13oz - 15oz)",
+        "category": "Tarpaulin",
+        "requestedQuantity": 1,
+        "dimensions": "10ft x 20ft Custom Grommeted Flex",
+        "unitPrice": 180
+      }
+    ],
+    "status": "Pending HQ Review",
+    "createdAt": "2026-08-15T01:19:32.466Z",
+    "updatedAt": "2026-08-15T01:19:32.466Z",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
+    "sentToEmails": [
+      "jade.gelv8@gmail.com",
+      "admin@gelvinc.com"
+    ]
+  },
+  {
+    "id": "BR-710406",
+    "branchName": "Great Print & Sign",
+    "branchCode": "GPS-02",
+    "requesterName": "Angel",
+    "requesterEmail": "jade.gelv8@gmail.com",
+    "requesterRole": "Branch Manager",
+    "requiredByDate": "2026-08-20",
+    "priority": "Normal",
+    "purpose": "Branch stock replenishment & local client installations",
+    "items": [
+      {
+        "itemId": "ad-101",
+        "itemTitle": "Heavy-Duty Outdoor Billboard Tarpaulin (13oz - 15oz)",
+        "category": "Tarpaulin",
+        "requestedQuantity": 1,
+        "dimensions": "10ft x 20ft Custom Grommeted Flex",
+        "unitPrice": 180
+      }
+    ],
+    "status": "Pending HQ Review",
+    "createdAt": "2026-08-15T01:18:30.406Z",
+    "updatedAt": "2026-08-15T01:18:30.406Z",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
+    "sentToEmails": [
+      "jade.gelv8@gmail.com",
+      "admin@gelvinc.com"
+    ]
+  },
+  {
+    "id": "BR-781023",
+    "branchName": "GELV INC Advertising",
+    "branchCode": "GELV-01",
+    "requesterName": "Marcus Vance",
+    "requesterEmail": "marcus.vance@gelvinc.com",
+    "requesterRole": "Main Operations Manager",
+    "requiredByDate": "2026-08-21",
+    "priority": "Normal",
+    "purpose": "Headquarters warehouse routine replenishment and client reserve stock",
+    "items": [
+      {
+        "itemId": "ad-101",
+        "itemTitle": "Heavy-Duty Outdoor Billboard Tarpaulin (13oz - 15oz)",
+        "category": "Tarpaulin",
+        "requestedQuantity": 4,
+        "dimensions": "10ft x 20ft Custom Grommeted Flex",
+        "unitPrice": 180
+      },
+      {
+        "itemId": "ad-104",
+        "itemTitle": "Commercial Gloss Vinyl Self-Adhesive Sticker Roll",
+        "category": "Stickers",
+        "requestedQuantity": 2,
+        "dimensions": "54in x 50m High-Tack Gloss White Vinyl",
+        "unitPrice": 140
+      }
+    ],
+    "status": "Pending HQ Review",
+    "createdAt": "2026-08-15T01:10:00.000Z",
+    "updatedAt": "2026-08-15T01:10:00.000Z",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
+    "sentToEmails": [
+      "jade.gelv8@gmail.com",
+      "admin@gelvinc.com"
+    ]
+  },
+  {
+    "id": "BR-554219",
+    "branchName": "Great Print & Sign",
+    "branchCode": "GPS-02",
+    "requesterName": "Ramon Bautista",
+    "requesterEmail": "ramon.b@greatprintsign.ph",
+    "requesterRole": "Branch Production Lead",
+    "requiredByDate": "2026-08-19",
+    "priority": "High Priority",
+    "purpose": "Expressway highway signage rollout project for commercial client",
+    "items": [
+      {
+        "itemId": "ad-102",
+        "itemTitle": "Wind-Permeable Mesh Tarpaulin Facade Banner",
+        "category": "Tarpaulin",
+        "requestedQuantity": 2,
+        "dimensions": "20ft x 40ft High-Altitude Mesh Flex",
+        "Unit": "Roll",
+        "unitPrice": 240
+      }
+    ],
+    "status": "Approved & Dispatched",
+    "shippingStatus": "Shipped Out & En Route",
+    "courierName": "GELV Logistics Fleet (Van #4)",
+    "trackingNumber": "TRK-GELV-88410",
+    "estimatedDeliveryDate": "2026-08-16",
+    "shippedAt": "2026-08-15T01:30:00.000Z",
+    "lastNotifiedAt": "2026-08-15T01:30:00.000Z",
+    "notifications": [
+      {
+        "id": "notif-sample-2",
+        "type": "Shipped Out",
+        "title": "Materials Shipped Out for Requisition BR-554219",
+        "message": "Items have been dispatched via GELV Logistics Fleet (Van #4). Driver Contact: 0917-882-9912. Waybill: TRK-GELV-88410. Estimated Delivery: Aug 16, 2026.",
+        "timestamp": "2026-08-15T01:30:00.000Z",
+        "sentBy": "HQ Admin (jade.gelv8@gmail.com)",
+        "recipientEmail": "ramon.b@greatprintsign.ph",
+        "details": {
+          "shippingStatus": "Shipped Out & En Route",
+          "courierName": "GELV Logistics Fleet (Van #4)",
+          "trackingNumber": "TRK-GELV-88410",
+          "estimatedDeliveryDate": "2026-08-16"
+        }
+      },
+      {
+        "id": "notif-sample-1",
+        "type": "Approval Notice",
+        "title": "Requisition BR-554219 Approved by HQ",
+        "message": "HQ Supply Chain has approved your requisition for 2 units of Wind-Permeable Mesh Tarpaulin. Warehouse packing underway.",
+        "timestamp": "2026-08-14T23:00:00.000Z",
+        "sentBy": "HQ Admin (jade.gelv8@gmail.com)",
+        "recipientEmail": "ramon.b@greatprintsign.ph",
+        "details": {
+          "shippingStatus": "Preparing for Dispatch"
+        }
+      }
+    ],
+    "createdAt": "2026-08-14T22:30:00.000Z",
+    "updatedAt": "2026-08-14T23:00:00.000Z",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
+    "sentToEmails": [
+      "jade.gelv8@gmail.com",
+      "admin@gelvinc.com"
+    ]
+  },
+  {
+    "id": "BR-412988",
+    "branchName": "VG Formera",
+    "branchCode": "VGF-03",
+    "requesterName": "Elena Santos",
+    "requesterEmail": "elena.santos@vgformera.ph",
+    "requesterRole": "Branch Store Manager",
+    "requiredByDate": "2026-08-22",
+    "priority": "Normal",
+    "purpose": "Storefront backlit panaflex signboard orders for local retail clients",
+    "items": [
+      {
+        "itemId": "ad-103",
+        "itemTitle": "High-Translucency Backlit Panaflex Media Substrate",
+        "category": "Panaflex",
+        "requestedQuantity": 2,
+        "dimensions": "14ft x 48ft Backlit Panaflex Board",
+        "unitPrice": 320
+      }
+    ],
+    "status": "Pending HQ Review",
+    "createdAt": "2026-08-14T19:15:00.000Z",
+    "updatedAt": "2026-08-14T19:15:00.000Z",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
+    "sentToEmails": [
+      "jade.gelv8@gmail.com",
+      "admin@gelvinc.com"
+    ]
+  },
+  {
+    "id": "BR-389104",
+    "branchName": "Kulay Advertising",
+    "branchCode": "KUL-04",
+    "requesterName": "Patricia Dimayuga",
+    "requesterEmail": "patricia@kulayadvertising.com",
+    "requesterRole": "Studio Branch Manager",
+    "requiredByDate": "2026-08-18",
+    "priority": "Emergency Restock",
+    "purpose": "Urgent exhibition gallery booth prints and high-resolution photo papers",
+    "items": [
+      {
+        "itemId": "ad-106",
+        "itemTitle": "Ultra-Chrome Premium RC Luster Photopaper Roll (260gsm)",
+        "category": "Photopapers",
+        "requestedQuantity": 3,
+        "dimensions": "44in x 30m Micro-Porous RC Luster Roll",
+        "unitPrice": 125
+      }
+    ],
+    "status": "Pending HQ Review",
+    "createdAt": "2026-08-14T18:40:00.000Z",
+    "updatedAt": "2026-08-14T18:40:00.000Z",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
+    "sentToEmails": [
+      "jade.gelv8@gmail.com",
+      "admin@gelvinc.com"
+    ]
+  },
+  {
+    "id": "BR-220911",
+    "branchName": "Taytay Print & Sign",
+    "branchCode": "TPS-05",
+    "requesterName": "Jerome Cruz",
+    "requesterEmail": "jerome.cruz@taytayprintsign.com",
+    "requesterRole": "Branch Dispatch Lead",
+    "requiredByDate": "2026-08-23",
+    "priority": "Normal",
+    "purpose": "Regional stock replenishment for garment tags, packaging, and paper stock cards",
+    "items": [
+      {
+        "itemId": "ad-108",
+        "itemTitle": "Premium C2S Matte Art Card Paperstock (300gsm - 350gsm)",
+        "category": "Paperstocks",
+        "requestedQuantity": 4,
+        "dimensions": "25in x 38in Bulk Sheet Ream (500 Sheets)",
+        "unitPrice": 85
+      }
+    ],
+    "status": "Pending HQ Review",
+    "createdAt": "2026-08-14T17:20:00.000Z",
+    "updatedAt": "2026-08-14T17:20:00.000Z",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
+    "sentToEmails": [
+      "jade.gelv8@gmail.com",
+      "admin@gelvinc.com"
+    ]
+  }
+]
