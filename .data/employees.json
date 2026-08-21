@@ -1,0 +1,21 @@
+[
+  {
+    "id": "EMP-001",
+    "uid": "uid-emp-001",
+    "name": "Jade Sumalinog",
+    "email": "JYS@gelvinc.com",
+    "branchName": "GELV INC Advertising",
+    "branchCode": "GELV-01",
+    "role": "Admin Assistant",
+    "department": "Admin",
+    "phone": "+63 969 036 7593",
+    "status": "Active",
+    "authProvider": "password",
+    "createdAt": "2025-01-10T08:00:00.000Z",
+    "lastLogin": "2026-08-21T09:29:54.788Z",
+    "recoveryNote": "Admin manual password update requested for Jade Sumalinog (Password manually set on 8/21/2026)",
+    "lastPasswordReset": "2026-08-21T09:56:00.280Z",
+    "resetRecoveryToken": "RCV-5AOEYD-0842",
+    "tempPassword": "Tokikaze@1"
+  }
+]

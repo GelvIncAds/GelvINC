@@ -52,7 +52,8 @@ interface AuthContextType {
 }
 
 const ADMIN_EMAILS = [
-  "jade.gelv8@gmail.com",
+  "jys@gelvinc.com",
+  "JYS@gelvinc.com",
   "admin@gelvinc.com", 
   "supplychain@gelvinc.com",
   "hq@gelvinc.com",

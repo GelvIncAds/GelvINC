@@ -1,0 +1,162 @@
+[
+  {
+    "id": "log-1787306160280",
+    "itemId": "EMP-001",
+    "itemTitle": "Manual Password Set: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:56:00.280Z",
+    "reason": "Administrative manual password override set for JYS@gelvinc.com. Note: Admin manual password update requested for Jade Sumalinog"
+  },
+  {
+    "id": "log-1787306146272",
+    "itemId": "EMP-001",
+    "itemTitle": "Manual Password Set: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:55:46.272Z",
+    "reason": "Administrative manual password override set for JYS@gelvinc.com. Note: Admin manual password update requested for Jade Sumalinog"
+  },
+  {
+    "id": "log-1787306141414",
+    "itemId": "EMP-001",
+    "itemTitle": "Employee Profile Updated: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:55:41.414Z",
+    "reason": "Updated employee credentials and role details for JYS@gelvinc.com"
+  },
+  {
+    "id": "log-1787306139925",
+    "itemId": "EMP-001",
+    "itemTitle": "Employee Profile Updated: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:55:39.925Z",
+    "reason": "Updated employee credentials and role details for JYS@gelvinc.com"
+  },
+  {
+    "id": "log-1787305450857",
+    "itemId": "EMP-001",
+    "itemTitle": "Account Recovery & Token Generated: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:44:10.857Z",
+    "reason": "Issued recovery token [RCV-5AOEYD-0842] for JYS@gelvinc.com. Action: Password Reset & Emergency Token. Note: Employee requested password recovery / credential clearance"
+  },
+  {
+    "id": "log-1787305437251",
+    "itemId": "EMP-001",
+    "itemTitle": "Employee Profile Updated: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:43:57.251Z",
+    "reason": "Updated employee credentials and role details for JYS@gelvinc.com"
+  },
+  {
+    "id": "log-1787305260626",
+    "itemId": "EMP-001",
+    "itemTitle": "Employee Profile Updated: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:41:00.626Z",
+    "reason": "Updated employee credentials and role details for JYS@gelvinc.com"
+  },
+  {
+    "id": "log-1787304723644",
+    "itemId": "EMP-001",
+    "itemTitle": "Account Recovery & Token Generated: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:32:03.644Z",
+    "reason": "Issued recovery token [RCV-D4D37L-3628] for JYS@gelvinc.com. Action: Password Reset & Emergency Token. Note: Employee requested password recovery / credential clearance"
+  },
+  {
+    "id": "log-1787304718583",
+    "itemId": "EMP-001",
+    "itemTitle": "Employee Profile Updated: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:31:58.583Z",
+    "reason": "Updated employee credentials and role details for JYS@gelvinc.com"
+  },
+  {
+    "id": "log-1787304705733",
+    "itemId": "EMP-001",
+    "itemTitle": "Employee Profile Updated: Jade Sumalinog",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:31:45.733Z",
+    "reason": "Updated employee credentials and role details for JYS@gelvinc.com"
+  },
+  {
+    "id": "log-1787304696380",
+    "itemId": "EMP-001",
+    "itemTitle": "Employee Profile Updated: Jade HQ Admin",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:31:36.380Z",
+    "reason": "Updated employee credentials and role details for JYS@gelvinc.com"
+  },
+  {
+    "id": "log-1787304629342",
+    "itemId": "EMP-002",
+    "itemTitle": "Employee Account Removed: Marco Reyes",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:30:29.342Z",
+    "reason": "Permanently removed employee record (gps.branch@gelvinc.com) from database"
+  },
+  {
+    "id": "log-1787304625083",
+    "itemId": "EMP-003",
+    "itemTitle": "Employee Account Removed: Victoria Garcia",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:30:25.083Z",
+    "reason": "Permanently removed employee record (vgf.branch@gelvinc.com) from database"
+  },
+  {
+    "id": "log-1787304620291",
+    "itemId": "EMP-004",
+    "itemTitle": "Employee Account Removed: Danilo Cruz",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:30:20.291Z",
+    "reason": "Permanently removed employee record (kulay.branch@gelvinc.com) from database"
+  },
+  {
+    "id": "log-1787304616498",
+    "itemId": "EMP-005",
+    "itemTitle": "Employee Account Removed: Elena Santos",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "HQ Administrator",
+    "timestamp": "2026-08-21T09:30:16.498Z",
+    "reason": "Permanently removed employee record (taytay.branch@gelvinc.com) from database"
+  },
+  {
+    "id": "log-1787303084231",
+    "itemId": "HQ-REQUISITION",
+    "itemTitle": "Branch Requisition from Great Print & Sign",
+    "previousStock": 0,
+    "newStock": 0,
+    "updatedBy": "Jade Sumalinog (Great Print & Sign)",
+    "timestamp": "2026-08-21T09:04:44.231Z",
+    "reason": "Submitted requisition request (BR-084231) with 1 line(s) - dispatched to JYS@gelvinc.com"
+  }
+]

@@ -5,7 +5,7 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
     id: "EMP-001",
     uid: "uid-emp-001",
     name: "Jade HQ Admin",
-    email: "jade.gelv8@gmail.com",
+    email: "JYS@gelvinc.com",
     branchName: "GELV INC Advertising",
     branchCode: "GELV-01",
     role: "CEO",

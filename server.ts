@@ -119,8 +119,8 @@ function getSeedBranchRequests(): BranchRequest[] {
       shippedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
       createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-      dispatchedToEmail: "jade.gelv8@gmail.com",
-      sentToEmails: ["jade.gelv8@gmail.com", "gps.branch@gelvinc.com"],
+      dispatchedToEmail: "JYS@gelvinc.com",
+      sentToEmails: ["JYS@gelvinc.com", "gps.branch@gelvinc.com"],
       notifications: [
         {
           id: "notif-1",
@@ -128,7 +128,7 @@ function getSeedBranchRequests(): BranchRequest[] {
           title: "Materials Shipped to Great Print & Sign",
           message: "Your requisition of 8 rolls has been dispatched via Logistics Truck #4. Waybill: TRK-GPS-49201.",
           recipientEmail: "gps.branch@gelvinc.com",
-          sentBy: "Jade Gelv8 (HQ Logistics)",
+          sentBy: "HQ Admin (JYS@gelvinc.com)",
           timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
           delivered: true
         }
@@ -157,8 +157,8 @@ function getSeedBranchRequests(): BranchRequest[] {
       status: "Pending HQ Review",
       createdAt: new Date(Date.now() - 86400000).toISOString(),
       updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      dispatchedToEmail: "jade.gelv8@gmail.com",
-      sentToEmails: ["jade.gelv8@gmail.com", "vgf.branch@gelvinc.com"]
+      dispatchedToEmail: "JYS@gelvinc.com",
+      sentToEmails: ["JYS@gelvinc.com", "vgf.branch@gelvinc.com"]
     },
     {
       id: "BR-618302",
@@ -183,8 +183,8 @@ function getSeedBranchRequests(): BranchRequest[] {
       status: "Pending HQ Review",
       createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-      dispatchedToEmail: "jade.gelv8@gmail.com",
-      sentToEmails: ["jade.gelv8@gmail.com", "kulay.branch@gelvinc.com"]
+      dispatchedToEmail: "JYS@gelvinc.com",
+      sentToEmails: ["JYS@gelvinc.com", "kulay.branch@gelvinc.com"]
     },
     {
       id: "BR-552914",
@@ -214,8 +214,8 @@ function getSeedBranchRequests(): BranchRequest[] {
       shippedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
       createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
       updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      dispatchedToEmail: "jade.gelv8@gmail.com",
-      sentToEmails: ["jade.gelv8@gmail.com", "taytay.branch@gelvinc.com"]
+      dispatchedToEmail: "JYS@gelvinc.com",
+      sentToEmails: ["JYS@gelvinc.com", "taytay.branch@gelvinc.com"]
     }
   ];
 }
@@ -549,7 +549,7 @@ async function startServer() {
     item.lastUpdated = new Date().toISOString();
 
     const totalAmount = item.dailyPrice * durationDays * requestedUnits;
-    const defaultAdmins = ["jade.gelv8@gmail.com", "admin@gelvinc.com", "ops@gelvinc.com"];
+    const defaultAdmins = ["JYS@gelvinc.com", "admin@gelvinc.com", "ops@gelvinc.com"];
     const adminRecipients = sentToAdmins && Array.isArray(sentToAdmins) ? sentToAdmins : defaultAdmins;
 
     const newInquiry: Inquiry = {
@@ -578,14 +578,14 @@ async function startServer() {
       newStock: item.stock,
       updatedBy: `User (${userEmail})`,
       timestamp: new Date().toISOString(),
-      reason: `Slot reserved & Request Form dispatched to jade.gelv8@gmail.com and admin team`,
+      reason: `Slot reserved & Request Form dispatched to JYS@gelvinc.com and admin team`,
     });
 
     saveData();
 
     res.status(201).json({
       success: true,
-      message: `Reservation confirmed for ${item.title}! PDF Request Form dispatched directly to jade.gelv8@gmail.com and operations team.`,
+      message: `Reservation confirmed for ${item.title}! PDF Request Form dispatched directly to JYS@gelvinc.com and operations team.`,
       data: newInquiry,
       updatedStock: item.stock,
     });
@@ -640,7 +640,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Missing required branch requisition fields or empty item list" });
     }
 
-    const primaryTargetEmail = "jade.gelv8@gmail.com";
+    const primaryTargetEmail = "JYS@gelvinc.com";
 
     const newReq: BranchRequest = {
       id: `BR-${Date.now().toString().slice(-6)}`,
@@ -696,7 +696,7 @@ async function startServer() {
       courierName,
       trackingNumber,
       estimatedDeliveryDate,
-      adminName = "HQ Admin (jade.gelv8@gmail.com)",
+      adminName = "HQ Admin (JYS@gelvinc.com)",
     } = req.body;
     const requestIndex = branchRequestsDb.findIndex(r => r.id === req.params.id);
 
@@ -838,7 +838,7 @@ async function startServer() {
       courierName,
       trackingNumber,
       estimatedDeliveryDate,
-      adminName = "HQ Admin (jade.gelv8@gmail.com)",
+      adminName = "HQ Admin (JYS@gelvinc.com)",
     } = req.body;
 
     const requestIndex = branchRequestsDb.findIndex(r => r.id === req.params.id);
