@@ -1,19 +1,55 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { GoogleUser } from "../types";
+import { 
+  auth, 
+  googleProvider, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  db,
+  FirebaseUser 
+} from "../lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { OFFICIAL_BRANCHES } from "../data/branches";
 
 interface AuthContextType {
   user: GoogleUser | null;
+  firebaseUser: FirebaseUser | null;
   isAdmin: boolean;
+  isAuthLoading: boolean;
+  authModalTab: "signin" | "signup";
+  setAuthModalTab: (tab: "signin" | "signup") => void;
+  showAuthModal: boolean;
+  setShowAuthModal: (show: boolean) => void;
+  openSignInModal: () => void;
+  openSignUpModal: () => void;
+  signInWithActualGoogle: (options?: { preferredBranchName?: string; preferredRole?: string }) => Promise<void>;
+  signUpWithEmail: (data: {
+    name: string;
+    email: string;
+    password: string;
+    branchName: string;
+    role?: string;
+  }) => Promise<boolean>;
+  signInWithEmail: (data: {
+    email: string;
+    password: string;
+  }) => Promise<boolean>;
   loginWithGoogle: (userProfile?: Partial<GoogleUser>) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   toggleAdminMode: () => void;
   verifyAndEnableAdmin: (passcode: string) => boolean;
   disableAdminMode: () => void;
-  setUserBranch: (branchName: string, branchCode: string, role?: string) => void;
-  showAuthModal: boolean;
-  setShowAuthModal: (show: boolean) => void;
+  setUserBranch: (branchName: string, branchCode: string, role?: string) => Promise<void>;
   showAdminPasscodeModal: boolean;
   setShowAdminPasscodeModal: (show: boolean) => void;
+  authError: string | null;
+  setAuthError: (err: string | null) => void;
+  authSuccessMessage: string | null;
+  setAuthSuccessMessage: (msg: string | null) => void;
 }
 
 const DEFAULT_GOOGLE_USER: GoogleUser = {
@@ -27,11 +63,17 @@ const DEFAULT_GOOGLE_USER: GoogleUser = {
   role: "Branch Production Lead"
 };
 
-const ADMIN_EMAILS = ["jade.gelv8@gmail.com", "admin@gelvinc.com", "admin@admedia.com"];
+const ADMIN_EMAILS = [
+  "jade.gelv8@gmail.com", 
+  "admin@gelvinc.com", 
+  "admin@admedia.com",
+  "jadelu@gelvinc.com"
+];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<GoogleUser | null>(() => {
     const saved = localStorage.getItem("google_user_session");
     if (saved) {
@@ -48,9 +90,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return localStorage.getItem("admedia_admin_mode") === "true";
   });
 
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccessMessage, setAuthSuccessMessage] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signup");
   const [showAdminPasscodeModal, setShowAdminPasscodeModal] = useState<boolean>(false);
 
+  // Sync state to local storage
   useEffect(() => {
     if (user) {
       localStorage.setItem("google_user_session", JSON.stringify(user));
@@ -63,29 +110,350 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("admedia_admin_mode", String(isAdmin));
   }, [isAdmin]);
 
+  const openSignInModal = () => {
+    setAuthError(null);
+    setAuthSuccessMessage(null);
+    setAuthModalTab("signin");
+    setShowAuthModal(true);
+  };
+
+  const openSignUpModal = () => {
+    setAuthError(null);
+    setAuthSuccessMessage(null);
+    setAuthModalTab("signup");
+    setShowAuthModal(true);
+  };
+
+  // Helper to format Firebase errors
+  const formatAuthError = (code: string, fallback: string): string => {
+    switch (code) {
+      case "auth/email-already-in-use":
+        return "This email is already registered. Please switch to Sign In.";
+      case "auth/weak-password":
+        return "Password is too weak. Please use at least 6 characters.";
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+      case "auth/user-not-found":
+      case "auth/wrong-password":
+      case "auth/invalid-credential":
+        return "Invalid email or password. Please try again or create a new account.";
+      case "auth/popup-closed-by-user":
+        return "Google sign-in popup was closed before completion.";
+      case "auth/unauthorized-domain":
+        return "OAuth domain not whitelisted. You can sign up using Email & Password instantly!";
+      case "auth/network-request-failed":
+        return "Network connection error. Please check your internet connection.";
+      default:
+        return fallback;
+    }
+  };
+
+  // Listen to Firebase Auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      setFirebaseUser(fbUser);
+      if (fbUser && fbUser.email) {
+        const userEmail = fbUser.email.toLowerCase();
+        const isUserAdmin = ADMIN_EMAILS.includes(userEmail);
+
+        try {
+          // Check if user has saved branch profile in Firestore
+          const userDocRef = doc(db, "users", fbUser.uid);
+          const userSnap = await getDoc(userDocRef);
+
+          let branchName = isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign";
+          let branchCode = isUserAdmin ? "GELV-01" : "GPS-02";
+          let role = isUserAdmin ? "HQ Supply Chain Admin" : "Branch Production Lead";
+
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            if (data.branchName) branchName = data.branchName;
+            if (data.branchCode) branchCode = data.branchCode;
+            if (data.role) role = data.role;
+          } else {
+            // Seed user profile
+            const branchObj = OFFICIAL_BRANCHES.find(b => b.name === branchName) || OFFICIAL_BRANCHES[0];
+            await setDoc(userDocRef, {
+              id: fbUser.uid,
+              name: fbUser.displayName || userEmail.split("@")[0],
+              email: userEmail,
+              picture: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fbUser.displayName || userEmail)}`,
+              branchName,
+              branchCode,
+              role,
+              createdAt: new Date().toISOString(),
+              lastLogin: new Date().toISOString()
+            }, { merge: true });
+          }
+
+          const resolvedUser: GoogleUser = {
+            id: fbUser.uid,
+            name: fbUser.displayName || userEmail.split("@")[0],
+            email: userEmail,
+            picture: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fbUser.displayName || userEmail)}`,
+            givenName: fbUser.displayName ? fbUser.displayName.split(" ")[0] : userEmail.split("@")[0],
+            branchName,
+            branchCode,
+            role,
+          };
+
+          setUser(resolvedUser);
+          if (isUserAdmin) {
+            setIsAdmin(true);
+          }
+        } catch (err) {
+          console.warn("Firestore user sync warning:", err);
+          const resolvedUser: GoogleUser = {
+            id: fbUser.uid,
+            name: fbUser.displayName || userEmail.split("@")[0],
+            email: userEmail,
+            picture: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fbUser.displayName || userEmail)}`,
+            givenName: fbUser.displayName ? fbUser.displayName.split(" ")[0] : userEmail.split("@")[0],
+            branchName: isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign",
+            branchCode: isUserAdmin ? "GELV-01" : "GPS-02",
+            role: isUserAdmin ? "HQ Supply Chain Admin" : "Branch Production Lead",
+          };
+          setUser(resolvedUser);
+          if (isUserAdmin) setIsAdmin(true);
+        }
+      }
+      setIsAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Sign up with Email & Password
+  const signUpWithEmail = async ({
+    name,
+    email,
+    password,
+    branchName,
+    role
+  }: {
+    name: string;
+    email: string;
+    password: string;
+    branchName: string;
+    role?: string;
+  }): Promise<boolean> => {
+    setAuthError(null);
+    setAuthSuccessMessage(null);
+    setIsAuthLoading(true);
+
+    try {
+      const branchObj = OFFICIAL_BRANCHES.find(b => b.name === branchName) || OFFICIAL_BRANCHES[1];
+      const branchCode = branchObj.code;
+      const userRole = role || branchObj.managerRole || "Branch Production Staff";
+      const normalizedEmail = email.trim().toLowerCase();
+      const isUserAdmin = ADMIN_EMAILS.includes(normalizedEmail);
+
+      // Create Firebase Auth user
+      const credential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+      const fbUser = credential.user;
+
+      // Update profile with display name
+      const photoURL = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || normalizedEmail)}`;
+      try {
+        await updateProfile(fbUser, {
+          displayName: name,
+          photoURL
+        });
+      } catch (e) {
+        console.warn("Could not update Firebase profile display name:", e);
+      }
+
+      // Store in Firestore
+      try {
+        const userDocRef = doc(db, "users", fbUser.uid);
+        await setDoc(userDocRef, {
+          id: fbUser.uid,
+          name,
+          email: normalizedEmail,
+          picture: photoURL,
+          branchName: isUserAdmin ? "GELV INC Advertising" : branchName,
+          branchCode: isUserAdmin ? "GELV-01" : branchCode,
+          role: isUserAdmin ? "HQ Supply Chain Admin" : userRole,
+          createdAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        console.warn("Could not persist new user to Firestore:", err);
+      }
+
+      const signedUpUser: GoogleUser = {
+        id: fbUser.uid,
+        name,
+        email: normalizedEmail,
+        picture: photoURL,
+        givenName: name.split(" ")[0] || normalizedEmail.split("@")[0],
+        branchName: isUserAdmin ? "GELV INC Advertising" : branchName,
+        branchCode: isUserAdmin ? "GELV-01" : branchCode,
+        role: isUserAdmin ? "HQ Supply Chain Admin" : userRole,
+      };
+
+      setUser(signedUpUser);
+      if (isUserAdmin) setIsAdmin(true);
+
+      setAuthSuccessMessage(`Account created successfully! Welcome to ${branchName}, ${name}.`);
+      setShowAuthModal(false);
+      return true;
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      setAuthError(formatAuthError(error.code, error.message || "Failed to create account."));
+      return false;
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Sign in with Email & Password
+  const signInWithEmail = async ({
+    email,
+    password
+  }: {
+    email: string;
+    password: string;
+  }): Promise<boolean> => {
+    setAuthError(null);
+    setAuthSuccessMessage(null);
+    setIsAuthLoading(true);
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      const fbUser = credential.user;
+      const isUserAdmin = ADMIN_EMAILS.includes(normalizedEmail);
+
+      let branchName = isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign";
+      let branchCode = isUserAdmin ? "GELV-01" : "GPS-02";
+      let role = isUserAdmin ? "HQ Supply Chain Admin" : "Branch Production Lead";
+
+      try {
+        const userDocRef = doc(db, "users", fbUser.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          if (data.branchName) branchName = data.branchName;
+          if (data.branchCode) branchCode = data.branchCode;
+          if (data.role) role = data.role;
+        }
+        await setDoc(userDocRef, { lastLogin: new Date().toISOString() }, { merge: true });
+      } catch (e) {
+        console.warn("Could not retrieve Firestore user record:", e);
+      }
+
+      const signedInUser: GoogleUser = {
+        id: fbUser.uid,
+        name: fbUser.displayName || normalizedEmail.split("@")[0],
+        email: normalizedEmail,
+        picture: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fbUser.displayName || normalizedEmail)}`,
+        givenName: fbUser.displayName ? fbUser.displayName.split(" ")[0] : normalizedEmail.split("@")[0],
+        branchName,
+        branchCode,
+        role,
+      };
+
+      setUser(signedInUser);
+      if (isUserAdmin) setIsAdmin(true);
+
+      setAuthSuccessMessage(`Welcome back, ${signedInUser.name}!`);
+      setShowAuthModal(false);
+      return true;
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      setAuthError(formatAuthError(error.code, error.message || "Failed to sign in with email."));
+      return false;
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Sign in with Real Google Account via Firebase Popup
+  const signInWithActualGoogle = async (options?: { preferredBranchName?: string; preferredRole?: string }) => {
+    setAuthError(null);
+    setAuthSuccessMessage(null);
+    setIsAuthLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const fbUser = result.user;
+      const userEmail = fbUser.email?.toLowerCase() || "";
+      const isUserAdmin = ADMIN_EMAILS.includes(userEmail);
+
+      let branchName = options?.preferredBranchName || (isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign");
+      const branchObj = OFFICIAL_BRANCHES.find(b => b.name === branchName) || OFFICIAL_BRANCHES[1];
+      let branchCode = branchObj.code;
+      let role = options?.preferredRole || (isUserAdmin ? "HQ Supply Chain Admin" : (branchObj.managerRole || "Branch Production Lead"));
+
+      try {
+        const userDocRef = doc(db, "users", fbUser.uid);
+        await setDoc(userDocRef, {
+          id: fbUser.uid,
+          name: fbUser.displayName || userEmail.split("@")[0],
+          email: userEmail,
+          picture: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fbUser.displayName || userEmail)}`,
+          branchName,
+          branchCode,
+          role,
+          lastLogin: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        console.warn("Could not write user to Firestore:", err);
+      }
+
+      const signedInGoogleUser: GoogleUser = {
+        id: fbUser.uid,
+        name: fbUser.displayName || userEmail.split("@")[0],
+        email: userEmail,
+        picture: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fbUser.displayName || userEmail)}`,
+        givenName: fbUser.displayName ? fbUser.displayName.split(" ")[0] : userEmail.split("@")[0],
+        branchName,
+        branchCode,
+        role,
+      };
+
+      setUser(signedInGoogleUser);
+      if (isUserAdmin) {
+        setIsAdmin(true);
+      }
+      setAuthSuccessMessage(`Signed in as ${signedInGoogleUser.name}`);
+      setShowAuthModal(false);
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      setAuthError(formatAuthError(error.code, error.message || "Failed to authenticate with Google."));
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Switch or mock preset profiles
   const loginWithGoogle = (customProfile?: Partial<GoogleUser>) => {
+    const email = customProfile?.email || "jade.gelv8@gmail.com";
+    const isUserAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
+
     const newUser: GoogleUser = {
       id: customProfile?.id || `google-${Date.now()}`,
-      name: customProfile?.name || "Jade Lu",
-      email: customProfile?.email || "jade.gelv8@gmail.com",
+      name: customProfile?.name || "Jade Gelv8",
+      email,
       picture: customProfile?.picture || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
       givenName: customProfile?.givenName || (customProfile?.name ? customProfile.name.split(" ")[0] : "Jade"),
-      branchName: customProfile?.branchName,
-      branchCode: customProfile?.branchCode,
-      role: customProfile?.role,
+      branchName: customProfile?.branchName || (isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign"),
+      branchCode: customProfile?.branchCode || (isUserAdmin ? "GELV-01" : "GPS-02"),
+      role: customProfile?.role || (isUserAdmin ? "HQ Supply Chain Admin" : "Branch Production Lead"),
     };
     setUser(newUser);
     setShowAuthModal(false);
+    setAuthError(null);
 
-    // Auto-enable admin mode ONLY if logging in as known HQ admin account
-    if (ADMIN_EMAILS.includes(newUser.email.toLowerCase())) {
+    // Auto-enable admin mode for known admin emails
+    if (isUserAdmin) {
       setIsAdmin(true);
     } else {
       setIsAdmin(false);
     }
   };
 
-  const setUserBranch = (branchName: string, branchCode: string, role?: string) => {
+  const setUserBranch = async (branchName: string, branchCode: string, role?: string) => {
     if (user) {
       const updated: GoogleUser = {
         ...user,
@@ -94,12 +462,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: role || user.role,
       };
       setUser(updated);
+
+      if (firebaseUser) {
+        try {
+          const userDocRef = doc(db, "users", firebaseUser.uid);
+          await setDoc(userDocRef, {
+            branchName,
+            branchCode,
+            role: role || user.role,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        } catch (e) {
+          console.warn("Could not update branch in Firestore:", e);
+        }
+      }
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn("Firebase signout warning:", e);
+    }
     setUser(null);
+    setFirebaseUser(null);
     setIsAdmin(false);
+    localStorage.removeItem("google_user_session");
+    localStorage.removeItem("admedia_admin_mode");
   };
 
   const toggleAdminMode = () => {
@@ -127,17 +517,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        firebaseUser,
         isAdmin,
+        isAuthLoading,
+        authModalTab,
+        setAuthModalTab,
+        showAuthModal,
+        setShowAuthModal,
+        openSignInModal,
+        openSignUpModal,
+        signInWithActualGoogle,
+        signUpWithEmail,
+        signInWithEmail,
         loginWithGoogle,
         logout,
         toggleAdminMode,
         verifyAndEnableAdmin,
         disableAdminMode,
         setUserBranch,
-        showAuthModal,
-        setShowAuthModal,
         showAdminPasscodeModal,
         setShowAdminPasscodeModal,
+        authError,
+        setAuthError,
+        authSuccessMessage,
+        setAuthSuccessMessage,
       }}
     >
       {children}
@@ -152,4 +555,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

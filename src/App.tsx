@@ -11,9 +11,10 @@ import { GoogleAuthModal } from "./components/GoogleAuthModal";
 import { AdminPasscodeModal } from "./components/AdminPasscodeModal";
 import { AdItem } from "./types";
 import { INITIAL_INVENTORY } from "./data/initialInventory";
+import { CheckCircle2, X } from "lucide-react";
 
 function MainApp() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, authSuccessMessage, setAuthSuccessMessage } = useAuth();
   
   const [activeTab, setActiveTab] = useState<"catalog" | "requests" | "admin">("catalog");
   const [items, setItems] = useState<AdItem[]>(() => INITIAL_INVENTORY);
@@ -31,6 +32,16 @@ function MainApp() {
   const [selectedItemModal, setSelectedItemModal] = useState<AdItem | null>(null);
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState<boolean>(false);
 
+  // Auto-dismiss auth success message
+  useEffect(() => {
+    if (authSuccessMessage) {
+      const t = setTimeout(() => {
+        setAuthSuccessMessage(null);
+      }, 4500);
+      return () => clearTimeout(t);
+    }
+  }, [authSuccessMessage, setAuthSuccessMessage]);
+
   // Fetch Inventory from Express API (with static demo fallback)
   const fetchInventory = useCallback(async (showLoadingSpinner = false) => {
     if (showLoadingSpinner) setIsLoading(true);
@@ -38,9 +49,9 @@ function MainApp() {
 
     try {
       const params = new URLSearchParams();
-      if (searchQuery) params.append("q", searchQuery);
+      if (searchQuery) params.append("search", searchQuery);
       if (selectedCategory && selectedCategory !== "All") params.append("category", selectedCategory);
-      if (selectedCity && selectedCity !== "All") params.append("city", selectedCity);
+      if (selectedCity && selectedCity !== "All") params.append("location", selectedCity);
       if (inStockOnly) params.append("inStockOnly", "true");
 
       const res = await fetch(`/api/inventory?${params.toString()}`);
@@ -51,8 +62,8 @@ function MainApp() {
 
         // Keep modal up to date if open
         if (selectedItemModal) {
-          const fresh = json.data.find((i: AdItem) => i.id === selectedItemModal.id);
-          if (fresh) setSelectedItemModal(fresh);
+          const updatedSelected = json.data.find((i: AdItem) => i.id === selectedItemModal.id);
+          if (updatedSelected) setSelectedItemModal(updatedSelected);
         }
       }
     } catch (err) {
@@ -84,7 +95,7 @@ function MainApp() {
     }
   }, [searchQuery, selectedCategory, selectedCity, inStockOnly, selectedItemModal]);
 
-  // Initial load & search reaction
+  // Trigger fetch on filter change
   useEffect(() => {
     fetchInventory(true);
   }, [fetchInventory]);
@@ -182,20 +193,38 @@ function MainApp() {
       });
       const json = await res.json();
       if (!json.success) {
-        throw new Error(json.error || "Failed to place reservation");
+        throw new Error(json.error || "Failed to submit booking reservation");
       }
-      // Re-sync database immediately
       await fetchInventory(false);
+      setSelectedItemModal(null);
+    } catch (err: any) {
+      alert("Error submitting reservation: " + err.message);
     } finally {
       setIsSubmittingInquiry(false);
     }
   };
 
-  const totalAvailableStock = items.reduce((acc, i) => acc + i.stock, 0);
+  const totalAvailableStock = items.reduce((acc, curr) => acc + (curr.stock || 0), 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col selection:bg-blue-500 selection:text-white">
-      {/* Navigation Bar */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+      {/* Top Notification Toast */}
+      {authSuccessMessage && (
+        <div className="fixed top-20 right-4 z-50 max-w-md bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl border border-emerald-400/40 flex items-center justify-between space-x-3 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center space-x-2.5">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-100" />
+            <span className="text-xs sm:text-sm font-semibold">{authSuccessMessage}</span>
+          </div>
+          <button
+            onClick={() => setAuthSuccessMessage(null)}
+            className="text-emerald-200 hover:text-white p-1 rounded-lg"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Main Header / Navigation */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -254,7 +283,7 @@ function MainApp() {
           <div className="flex items-center space-x-4">
             <span>HQ &amp; Branch Supply Chain Network</span>
             <span>&bull;</span>
-            <span>Google Account Integration</span>
+            <span>Google Account &amp; Email Authentication</span>
           </div>
         </div>
       </footer>

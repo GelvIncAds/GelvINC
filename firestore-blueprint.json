@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profiles",
+      "description": "Registered and authenticated users with assigned branch and roles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "picture": { "type": "string" },
+        "givenName": { "type": "string" },
+        "branchName": { "type": "string" },
+        "branchCode": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "lastLogin": { "type": "string" }
+      },
+      "required": ["id", "email", "name"]
+    },
+    "inventory": {
+      "title": "Advertising Materials Inventory",
+      "description": "Stock levels, specifications, and pricing for print and advertising media",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sku": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "location": { "type": "string" },
+        "dimensions": { "type": "string" },
+        "stock": { "type": "number" },
+        "status": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "description": { "type": "string" },
+        "lastUpdated": { "type": "string" }
+      },
+      "required": ["id", "title", "category", "stock", "status"]
+    },
+    "branch_requests": {
+      "title": "Branch Material Requisitions",
+      "description": "Stock requisition orders submitted by branches for HQ fulfillment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "branchName": { "type": "string" },
+        "branchCode": { "type": "string" },
+        "requesterName": { "type": "string" },
+        "requesterEmail": { "type": "string" },
+        "requesterRole": { "type": "string" },
+        "status": { "type": "string" },
+        "items": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "branchName", "requesterEmail", "status"]
+    }
+  }
+}
