@@ -223,7 +223,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           `• Requested Items: ${req.items.length} line item(s) (${req.items.map((i) => `${i.requestedQuantity}x ${i.itemTitle}`).join(", ")})\n` +
           `• Required By Date: ${req.requiredByDate}\n` +
           `• Initial Status: Materials are being packed at the Central Warehouse and prepared for scheduled dispatch.\n\n` +
-          `Thank you,\nHQ Supply Chain Operations (jade.gelv8@gmail.com)`
+          `Thank you,\nHQ Supply Chain Operations (supplychain@gelvinc.com)`
       );
     } else if (mode === "ship") {
       setNotifyShippingStatus("Shipped Out & En Route");
@@ -235,7 +235,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           `• Waybill / Tracking No.: ${req.trackingNumber || "TRK-GELV-PENDING"}\n` +
           `• Expected Delivery Date: ${req.estimatedDeliveryDate || "Within 24-48 Hours"}\n\n` +
           `Please have your branch personnel ready to inspect the materials upon arrival.\n\n` +
-          `Best regards,\nHQ Supply Chain Operations (jade.gelv8@gmail.com)`
+          `Best regards,\nHQ Supply Chain Operations (supplychain@gelvinc.com)`
       );
     } else if (mode === "notify") {
       setNotifyShippingStatus(req.shippingStatus || "Preparing for Dispatch");
@@ -255,7 +255,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           `• Requisition Ref: ${req.id}\n` +
           `• Line Items Requested: ${req.items.map((i) => `${i.requestedQuantity}x ${i.itemTitle}`).join(", ")}\n` +
           `• Next Steps: Please check available materials in the Central Catalog or reach out to Headquarters Supply Operations for alternative allocations.\n\n` +
-          `Regards,\nHQ Supply Chain Operations (jade.gelv8@gmail.com)`
+          `Regards,\nHQ Supply Chain Operations (supplychain@gelvinc.com)`
       );
     }
   };
@@ -283,7 +283,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         `• Requisition Ref: ${req.id}\n` +
         `• Line Items Requested: ${req.items.map((i) => `${i.requestedQuantity}x ${i.itemTitle}`).join(", ")}\n` +
         `• Next Steps: Please check available materials in the Central Catalog or reach out to Headquarters Supply Operations for alternative allocations.\n\n` +
-        `Regards,\nHQ Supply Chain Operations (jade.gelv8@gmail.com)`
+        `Regards,\nHQ Supply Chain Operations (supplychain@gelvinc.com)`
     );
   };
 
@@ -309,7 +309,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             notifyRequester: true,
             notificationMessage: notifyMessage.trim(),
             hqNotes: `Approved by HQ on ${new Date().toLocaleDateString()}. Dispatched via ${finalCourier}.`,
-            adminName: "HQ Operations Lead (jade.gelv8@gmail.com)",
+            adminName: "HQ Operations Lead (supplychain@gelvinc.com)",
           }),
         });
         const data = await res.json();
@@ -334,7 +334,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             courierName: finalCourier,
             trackingNumber: notifyTracking.trim(),
             estimatedDeliveryDate: notifyETA,
-            adminName: "HQ Operations Lead (jade.gelv8@gmail.com)",
+            adminName: "HQ Operations Lead (supplychain@gelvinc.com)",
           }),
         });
         const data = await res.json();
@@ -358,7 +358,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             courierName: finalCourier,
             trackingNumber: notifyTracking.trim(),
             estimatedDeliveryDate: notifyETA,
-            adminName: "HQ Operations Lead (jade.gelv8@gmail.com)",
+            adminName: "HQ Operations Lead (supplychain@gelvinc.com)",
           }),
         });
         const data = await res.json();
@@ -382,7 +382,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             notificationType: "Request Declined",
             notificationTitle: notifySubject.trim() || `Requisition ${dispatchModalReq.id} Declined by HQ Admin`,
             notificationMessage: notifyMessage.trim(),
-            adminName: "HQ Operations Lead (jade.gelv8@gmail.com)",
+            adminName: "HQ Operations Lead (supplychain@gelvinc.com)",
           }),
         });
         const data = await res.json();
@@ -1322,7 +1322,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </p>
             </div>
             <span className="px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-xl border border-amber-200">
-              Auto-Dispatched to: admin@gelvinc.com, jade.gelv8@gmail.com
+              Auto-Dispatched to: admin@gelvinc.com, supplychain@gelvinc.com
             </span>
           </div>
 
@@ -1332,7 +1332,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             ) : (
               inquiries.map((inq) => {
                 const matchedItem = items.find((i) => i.id === inq.itemId);
-                const recipients = inq.sentToAdmins || ["admin@gelvinc.com", "jade.gelv8@gmail.com"];
+                const recipients = inq.sentToAdmins || ["admin@gelvinc.com", "supplychain@gelvinc.com"];
 
                 return (
                   <div key={inq.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1397,11 +1397,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <h2 className="text-lg font-bold text-slate-900">Branch Requisition Orders to HQ</h2>
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px] flex items-center space-x-1">
                   <Mail className="w-3 h-3 text-amber-700" />
-                  <span>HQ Inbox: jade.gelv8@gmail.com</span>
+                  <span>HQ Inbox: supplychain@gelvinc.com</span>
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Review incoming material requests from regional branches. All requests are routed to <strong>jade.gelv8@gmail.com</strong>. Approving a request auto-dispatches stock and decrements HQ inventory.
+                Review incoming material requests from regional branches. All requests are routed to <strong>supplychain@gelvinc.com</strong>. Approving a request auto-dispatches stock and decrements HQ inventory.
               </p>
             </div>
 
@@ -2190,7 +2190,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
                     {/* External Mailto Link */}
                     <a
-                      href={`mailto:${encodeURIComponent(dispatchModalReq.requesterEmail)}?cc=admin@gelvinc.com,jade.gelv8@gmail.com&subject=${encodeURIComponent(
+                      href={`mailto:${encodeURIComponent(dispatchModalReq.requesterEmail)}?cc=admin@gelvinc.com,supplychain@gelvinc.com&subject=${encodeURIComponent(
                         notifySubject
                       )}&body=${encodeURIComponent(notifyMessage)}`}
                       target="_blank"

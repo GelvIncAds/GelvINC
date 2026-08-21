@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { 
   X, 
-  CheckCircle2, 
-  ShieldCheck, 
   Mail, 
   UserCheck, 
   Store, 
@@ -28,7 +26,6 @@ export const GoogleAuthModal: React.FC = () => {
     signInWithActualGoogle, 
     signUpWithEmail,
     signInWithEmail,
-    loginWithGoogle,
     isAuthLoading,
     authError,
     setAuthError
@@ -90,25 +87,6 @@ export const GoogleAuthModal: React.FC = () => {
     await signInWithEmail({
       email: signInEmail.trim(),
       password: signInPassword
-    });
-  };
-
-  const handleSelectPresetAccount = (
-    email: string,
-    name: string,
-    picture: string,
-    branchName?: string,
-    branchCode?: string,
-    role?: string
-  ) => {
-    loginWithGoogle({
-      email,
-      name,
-      picture,
-      givenName: name.split(" ")[0],
-      branchName,
-      branchCode,
-      role,
     });
   };
 
@@ -217,10 +195,10 @@ export const GoogleAuthModal: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    Fastest: Instant Google Sign Up
+                    Instant Google Sign Up
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                    1-Click
+                    Live OAuth
                   </span>
                 </div>
 
@@ -311,7 +289,7 @@ export const GoogleAuthModal: React.FC = () => {
                       required
                       value={signUpEmail}
                       onChange={(e) => setSignUpEmail(e.target.value)}
-                      placeholder="maria.santos@company.com"
+                      placeholder="your.email@company.com"
                       className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     />
                   </div>
@@ -428,7 +406,7 @@ export const GoogleAuthModal: React.FC = () => {
                 </div>
 
                 <p className="text-xs text-slate-600">
-                  Sign in instantly using your personal or corporate Google account.
+                  Sign in instantly using your personal or company Google account.
                 </p>
 
                 <button
@@ -525,74 +503,6 @@ export const GoogleAuthModal: React.FC = () => {
                   )}
                 </button>
               </form>
-
-              {/* Quick Persona Switcher for Instant Demo */}
-              <div className="pt-2">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Quick Demo Personas (1-Click Switch)
-                  </label>
-                </div>
-
-                <div className="space-y-2">
-                  {/* HQ Admin Account */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleSelectPresetAccount(
-                        "jade.gelv8@gmail.com",
-                        "Jade Gelv8",
-                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-                        "GELV INC Advertising",
-                        "GELV-01",
-                        "HQ Supply Chain Admin"
-                      )
-                    }
-                    className="w-full flex items-center justify-between p-2.5 rounded-xl border border-amber-300 bg-amber-50/50 hover:bg-amber-100/60 transition-all text-left"
-                  >
-                    <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs">
-                        👑
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                          <span>Jade Gelv8</span>
-                          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">HQ Admin</span>
-                        </div>
-                        <div className="text-[10px] text-slate-500">jade.gelv8@gmail.com</div>
-                      </div>
-                    </div>
-                    <CheckCircle2 className="w-4 h-4 text-amber-600" />
-                  </button>
-
-                  {/* Branch Preset */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleSelectPresetAccount(
-                        "gps.branch@gelvinc.com",
-                        "Marco Reyes",
-                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-                        "Great Print & Sign",
-                        "GPS-02",
-                        "Branch Production Lead"
-                      )
-                    }
-                    className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/30 transition-all text-left"
-                  >
-                    <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center font-bold text-[10px]">
-                        GPS
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900">Marco Reyes (GPS-02)</div>
-                        <div className="text-[10px] text-slate-500">Great Print & Sign &bull; Branch Staff</div>
-                      </div>
-                    </div>
-                    <CheckCircle2 className="w-4 h-4 text-slate-300" />
-                  </button>
-                </div>
-              </div>
 
               <div className="text-center pt-2">
                 <span className="text-xs text-slate-500">Don't have an account? </span>

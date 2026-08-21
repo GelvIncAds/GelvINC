@@ -436,7 +436,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
           <div className="pt-2 flex flex-wrap gap-4 text-xs font-semibold text-slate-400">
             <div className="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
               <Mail className="w-4 h-4 text-amber-400" />
-              <span>Target HQ Inbox: <strong className="text-amber-300">jade.gelv8@gmail.com</strong></span>
+              <span>Target HQ Inbox: <strong className="text-amber-300">supplychain@gelvinc.com</strong></span>
             </div>
             <div className="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -526,7 +526,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                   <span>Requisition Summary:</span>
                   <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
                     <Mail className="w-3 h-3 text-emerald-600" />
-                    <span>Dispatched to jade.gelv8@gmail.com</span>
+                    <span>Dispatched to supplychain@gelvinc.com</span>
                   </span>
                 </div>
                 <div>&bull; Originating Branch: <strong>{submitSuccess.branchName}</strong></div>
@@ -551,10 +551,10 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                 </button>
 
                 <a
-                  href={`mailto:jade.gelv8@gmail.com?subject=${encodeURIComponent(
+                  href={`mailto:supplychain@gelvinc.com?subject=${encodeURIComponent(
                     `[Branch Requisition] ${submitSuccess.id} from ${submitSuccess.branchName}`
                   )}&body=${encodeURIComponent(
-                    `Hello GELV INC HQ Supply Chain (jade.gelv8@gmail.com),\n\nPlease find the details for Branch Requisition ${submitSuccess.id}:\n\n` +
+                    `Hello GELV INC HQ Supply Chain (supplychain@gelvinc.com),\n\nPlease find the details for Branch Requisition ${submitSuccess.id}:\n\n` +
                     `• Branch: ${submitSuccess.branchName} (${submitSuccess.branchCode})\n` +
                     `• Requester: ${submitSuccess.requesterName} (${submitSuccess.requesterRole})\n` +
                     `• Contact Email: ${submitSuccess.requesterEmail}\n` +
@@ -570,7 +570,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                   className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
                 >
                   <Mail className="w-4 h-4" />
-                  <span>Email Direct to jade.gelv8@gmail.com</span>
+                  <span>Email Direct to supplychain@gelvinc.com</span>
                 </a>
 
                 <button
@@ -1765,15 +1765,15 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
                       <div className="flex items-center space-x-1.5 text-slate-500 text-xs">
                         <Mail className="w-3.5 h-3.5 text-amber-500" />
-                        <span>HQ Reviewer: <strong className="text-slate-700">jade.gelv8@gmail.com</strong></span>
+                        <span>HQ Reviewer: <strong className="text-slate-700">supplychain@gelvinc.com</strong></span>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
                         <a
-                          href={`mailto:jade.gelv8@gmail.com?subject=${encodeURIComponent(
+                          href={`mailto:supplychain@gelvinc.com?subject=${encodeURIComponent(
                             `[Branch Requisition Inquiry] ${req.id} from ${req.branchName}`
                           )}&body=${encodeURIComponent(
-                            `Hello GELV INC HQ Supply Chain (jade.gelv8@gmail.com),\n\nRegarding Branch Requisition ${req.id}:\n\n` +
+                            `Hello GELV INC HQ Supply Chain (supplychain@gelvinc.com),\n\nRegarding Branch Requisition ${req.id}:\n\n` +
                             `• Branch: ${req.branchName} (${req.branchCode})\n` +
                             `• Requester: ${req.requesterName} (${req.requesterEmail})\n` +
                             `• Current Status: ${req.status}\n` +
@@ -1789,7 +1789,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                           className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition-all border border-blue-200"
                         >
                           <Mail className="w-3.5 h-3.5" />
-                          <span>Email HQ (jade.gelv8@gmail.com)</span>
+                          <span>Email HQ (supplychain@gelvinc.com)</span>
                         </a>
 
                         <button

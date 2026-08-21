@@ -238,7 +238,7 @@ export function generateRequestPDF(
   doc.setFont("helvetica", "bold");
   doc.setTextColor(51, 65, 85);
   doc.text(
-    "• Primary Dispatch Recipient: jade.gelv8@gmail.com\n• Operations Team: admin@gelvinc.com\n• GELV INC Central Inventory Real-time Database",
+    "• Primary Dispatch Recipient: supplychain@gelvinc.com\n• Operations Team: admin@gelvinc.com\n• GELV INC Central Inventory Real-time Database",
     margin + 3,
     y
   );
@@ -456,7 +456,7 @@ export function generateBranchRequestPDF(
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(71, 85, 105);
-  doc.text(`• HQ Reviewer / Recipient: jade.gelv8@gmail.com`, margin + 5, y + 11);
+  doc.text(`• HQ Reviewer / Recipient: supplychain@gelvinc.com`, margin + 5, y + 11);
   doc.text(`• HQ Status: ${request.status}`, margin + 5, y + 16);
   
   if (request.shippingStatus || request.courierName || request.trackingNumber) {

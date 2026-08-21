@@ -38,7 +38,6 @@ interface AuthContextType {
     email: string;
     password: string;
   }) => Promise<boolean>;
-  loginWithGoogle: (userProfile?: Partial<GoogleUser>) => void;
   logout: () => Promise<void>;
   toggleAdminMode: () => void;
   verifyAndEnableAdmin: (passcode: string) => boolean;
@@ -52,22 +51,11 @@ interface AuthContextType {
   setAuthSuccessMessage: (msg: string | null) => void;
 }
 
-const DEFAULT_GOOGLE_USER: GoogleUser = {
-  id: "google-usr-98214",
-  name: "Marco Reyes",
-  email: "gps.branch@gelvinc.com",
-  picture: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-  givenName: "Marco",
-  branchName: "Great Print & Sign",
-  branchCode: "GPS-02",
-  role: "Branch Production Lead"
-};
-
 const ADMIN_EMAILS = [
-  "jade.gelv8@gmail.com", 
   "admin@gelvinc.com", 
-  "admin@admedia.com",
-  "jadelu@gelvinc.com"
+  "supplychain@gelvinc.com",
+  "hq@gelvinc.com",
+  "operations@gelvinc.com"
 ];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -75,19 +63,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<GoogleUser | null>(() => {
-    const saved = localStorage.getItem("google_user_session");
+    const saved = localStorage.getItem("gelv_user_session");
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        return DEFAULT_GOOGLE_USER;
+        return null;
       }
     }
-    return DEFAULT_GOOGLE_USER;
+    return null;
   });
 
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    return localStorage.getItem("admedia_admin_mode") === "true";
+    return localStorage.getItem("gelv_admin_mode") === "true";
   });
 
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
@@ -100,14 +88,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sync state to local storage
   useEffect(() => {
     if (user) {
-      localStorage.setItem("google_user_session", JSON.stringify(user));
+      localStorage.setItem("gelv_user_session", JSON.stringify(user));
     } else {
-      localStorage.removeItem("google_user_session");
+      localStorage.removeItem("gelv_user_session");
     }
   }, [user]);
 
   useEffect(() => {
-    localStorage.setItem("admedia_admin_mode", String(isAdmin));
+    localStorage.setItem("gelv_admin_mode", String(isAdmin));
   }, [isAdmin]);
 
   const openSignInModal = () => {
@@ -136,11 +124,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case "auth/user-not-found":
       case "auth/wrong-password":
       case "auth/invalid-credential":
-        return "Invalid email or password. Please try again or create a new account.";
+        return "Invalid email or password. Please check your credentials or create a new account.";
       case "auth/popup-closed-by-user":
         return "Google sign-in popup was closed before completion.";
       case "auth/unauthorized-domain":
-        return "OAuth domain not whitelisted. You can sign up using Email & Password instantly!";
+        return "OAuth domain not authorized. You can sign up using Email & Password instantly!";
       case "auth/network-request-failed":
         return "Network connection error. Please check your internet connection.";
       default:
@@ -215,6 +203,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           setUser(resolvedUser);
           if (isUserAdmin) setIsAdmin(true);
+        }
+      } else if (!fbUser) {
+        // If not logged into Firebase, don't force mock session unless user had signed in
+        const saved = localStorage.getItem("gelv_user_session");
+        if (!saved) {
+          setUser(null);
         }
       }
       setIsAuthLoading(false);
@@ -295,7 +289,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(signedUpUser);
       if (isUserAdmin) setIsAdmin(true);
 
-      setAuthSuccessMessage(`Account created successfully! Welcome to ${branchName}, ${name}.`);
+      setAuthSuccessMessage(`Account created successfully! Welcome, ${name}.`);
       setShowAuthModal(false);
       return true;
     } catch (error: any) {
@@ -426,33 +420,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Switch or mock preset profiles
-  const loginWithGoogle = (customProfile?: Partial<GoogleUser>) => {
-    const email = customProfile?.email || "jade.gelv8@gmail.com";
-    const isUserAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
-
-    const newUser: GoogleUser = {
-      id: customProfile?.id || `google-${Date.now()}`,
-      name: customProfile?.name || "Jade Gelv8",
-      email,
-      picture: customProfile?.picture || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
-      givenName: customProfile?.givenName || (customProfile?.name ? customProfile.name.split(" ")[0] : "Jade"),
-      branchName: customProfile?.branchName || (isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign"),
-      branchCode: customProfile?.branchCode || (isUserAdmin ? "GELV-01" : "GPS-02"),
-      role: customProfile?.role || (isUserAdmin ? "HQ Supply Chain Admin" : "Branch Production Lead"),
-    };
-    setUser(newUser);
-    setShowAuthModal(false);
-    setAuthError(null);
-
-    // Auto-enable admin mode for known admin emails
-    if (isUserAdmin) {
-      setIsAdmin(true);
-    } else {
-      setIsAdmin(false);
-    }
-  };
-
   const setUserBranch = async (branchName: string, branchCode: string, role?: string) => {
     if (user) {
       const updated: GoogleUser = {
@@ -488,8 +455,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setFirebaseUser(null);
     setIsAdmin(false);
-    localStorage.removeItem("google_user_session");
-    localStorage.removeItem("admedia_admin_mode");
+    localStorage.removeItem("gelv_user_session");
+    localStorage.removeItem("gelv_admin_mode");
   };
 
   const toggleAdminMode = () => {
@@ -529,7 +496,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithActualGoogle,
         signUpWithEmail,
         signInWithEmail,
-        loginWithGoogle,
         logout,
         toggleAdminMode,
         verifyAndEnableAdmin,
