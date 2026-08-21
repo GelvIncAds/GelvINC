@@ -10,13 +10,14 @@ import { BranchRequestPortal } from "./components/BranchRequestPortal";
 import { GoogleAuthModal } from "./components/GoogleAuthModal";
 import { AdminPasscodeModal } from "./components/AdminPasscodeModal";
 import { AdItem } from "./types";
+import { INITIAL_INVENTORY } from "./data/initialInventory";
 
 function MainApp() {
   const { user, isAdmin } = useAuth();
   
   const [activeTab, setActiveTab] = useState<"catalog" | "requests" | "admin">("catalog");
-  const [items, setItems] = useState<AdItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [items, setItems] = useState<AdItem[]>(() => INITIAL_INVENTORY);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Search and Filter state
@@ -30,7 +31,7 @@ function MainApp() {
   const [selectedItemModal, setSelectedItemModal] = useState<AdItem | null>(null);
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState<boolean>(false);
 
-  // Fetch Inventory from Express API
+  // Fetch Inventory from Express API (with static demo fallback)
   const fetchInventory = useCallback(async (showLoadingSpinner = false) => {
     if (showLoadingSpinner) setIsLoading(true);
     setIsSyncing(true);
@@ -43,8 +44,9 @@ function MainApp() {
       if (inStockOnly) params.append("inStockOnly", "true");
 
       const res = await fetch(`/api/inventory?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      if (json.success) {
+      if (json.success && Array.isArray(json.data)) {
         setItems(json.data);
 
         // Keep modal up to date if open
@@ -54,7 +56,28 @@ function MainApp() {
         }
       }
     } catch (err) {
-      console.error("Error fetching inventory from DB:", err);
+      // Fallback for static environments (GitHub Pages, etc.)
+      console.info("Live backend API unreachable (static mode active), filtering local catalog dataset.");
+      let filtered = [...INITIAL_INVENTORY];
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(i => 
+          i.title?.toLowerCase().includes(q) || 
+          i.sku?.toLowerCase().includes(q) || 
+          i.category?.toLowerCase().includes(q) ||
+          i.description?.toLowerCase().includes(q)
+        );
+      }
+      if (selectedCategory && selectedCategory !== "All") {
+        filtered = filtered.filter(i => i.category === selectedCategory);
+      }
+      if (selectedCity && selectedCity !== "All") {
+        filtered = filtered.filter(i => i.location === selectedCity);
+      }
+      if (inStockOnly) {
+        filtered = filtered.filter(i => i.stock > 0);
+      }
+      setItems(filtered);
     } finally {
       setIsLoading(false);
       setIsSyncing(false);

@@ -83,7 +83,7 @@ export interface BranchRequestItem {
 
 export interface BranchRequestNotification {
   id: string;
-  type: 'Approval Notice' | 'Shipped Out' | 'Delivered' | 'General Update' | 'Waybill & Shipment Dispatched';
+  type: 'Approval Notice' | 'Shipped Out' | 'Delivered' | 'General Update' | 'Waybill & Shipment Dispatched' | 'Request Declined';
   title: string;
   message: string;
   timestamp: string;

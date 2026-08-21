@@ -100,7 +100,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // Branch Request Dispatch & Notification Modal State
   const [dispatchModalReq, setDispatchModalReq] = useState<BranchRequest | null>(null);
-  const [dispatchActionType, setDispatchActionType] = useState<"approve" | "ship" | "notify" | "view">("approve");
+  const [dispatchActionType, setDispatchActionType] = useState<"approve" | "ship" | "notify" | "decline" | "view">("approve");
   const [notifyShippingStatus, setNotifyShippingStatus] = useState<
     "Preparing for Dispatch" | "Shipped Out & En Route" | "Delivered" | "Ready for Pickup"
   >("Preparing for Dispatch");
@@ -114,6 +114,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   });
   const [notifyMessage, setNotifyMessage] = useState<string>("");
   const [notifySubject, setNotifySubject] = useState<string>("");
+  const [declineReasonPreset, setDeclineReasonPreset] = useState<string>("out_of_stock");
   const [isSubmittingDispatch, setIsSubmittingDispatch] = useState<boolean>(false);
   const [autoDecrementStock, setAutoDecrementStock] = useState<boolean>(true);
 
@@ -194,7 +195,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   const handleOpenDispatchModal = (
     req: BranchRequest,
-    mode: "approve" | "ship" | "notify" | "view" = "approve"
+    mode: "approve" | "ship" | "notify" | "decline" | "view" = "approve"
   ) => {
     setDispatchModalReq(req);
     setDispatchActionType(mode);
@@ -244,7 +245,46 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           `• Status: ${req.status}\n` +
           `• Notes: `
       );
+    } else if (mode === "decline") {
+      setNotifyShippingStatus("Pending Fulfillment");
+      setNotifySubject(`[HQ Requisition Declined] Requisition ${req.id} for ${req.branchName}`);
+      setNotifyMessage(
+        `Hello ${req.requesterName},\n\nGELV INC Headquarters Supply Chain has reviewed your branch requisition ${req.id} for ${req.branchName}.\n\n` +
+          `Unfortunately, this requisition has been DECLINED by HQ Administration.\n\n` +
+          `• Reason for Decline: Material stock depleted / Specifications require revision.\n` +
+          `• Requisition Ref: ${req.id}\n` +
+          `• Line Items Requested: ${req.items.map((i) => `${i.requestedQuantity}x ${i.itemTitle}`).join(", ")}\n` +
+          `• Next Steps: Please check available materials in the Central Catalog or reach out to Headquarters Supply Operations for alternative allocations.\n\n` +
+          `Regards,\nHQ Supply Chain Operations (jade.gelv8@gmail.com)`
+      );
     }
+  };
+
+  const handleApplyDeclinePreset = (presetKey: string, req: BranchRequest) => {
+    setDeclineReasonPreset(presetKey);
+    let reasonText = "";
+    if (presetKey === "out_of_stock") {
+      reasonText = "Requested material is currently out of stock at HQ Central Warehouse and supplier lead time exceeds required date.";
+    } else if (presetKey === "spec_revision") {
+      reasonText = "Custom banner/signage specifications require additional engineering details or sizing clarification before production.";
+    } else if (presetKey === "quota_exceeded") {
+      reasonText = "Branch material quota or budget allocation limit has been reached for the current billing cycle.";
+    } else if (presetKey === "discontinued") {
+      reasonText = "Requested material SKU / media roll size is discontinued and no longer supported in standard inventory.";
+    } else {
+      reasonText = "Material request cannot be fulfilled at this time due to operational constraints.";
+    }
+
+    setNotifySubject(`[HQ Requisition Declined] Notice regarding Requisition ${req.id} (${req.branchName})`);
+    setNotifyMessage(
+      `Hello ${req.requesterName},\n\nGELV INC Headquarters Supply Chain has reviewed your branch requisition ${req.id} for ${req.branchName}.\n\n` +
+        `Unfortunately, this requisition has been DECLINED by HQ Administration.\n\n` +
+        `• Reason for Decline: ${reasonText}\n` +
+        `• Requisition Ref: ${req.id}\n` +
+        `• Line Items Requested: ${req.items.map((i) => `${i.requestedQuantity}x ${i.itemTitle}`).join(", ")}\n` +
+        `• Next Steps: Please check available materials in the Central Catalog or reach out to Headquarters Supply Operations for alternative allocations.\n\n` +
+        `Regards,\nHQ Supply Chain Operations (jade.gelv8@gmail.com)`
+    );
   };
 
   const handleExecuteDispatchSubmit = async (e?: React.FormEvent) => {
@@ -329,6 +369,31 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           await fetchAuditLogs();
         } else {
           alert(data.error || "Failed to send notice");
+        }
+      } else if (dispatchActionType === "decline") {
+        const res = await fetch(`/api/branch-requests/${dispatchModalReq.id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "Declined",
+            hqNotes: notifyMessage.trim(),
+            autoDecrement: false,
+            notifyRequester: true,
+            notificationType: "Request Declined",
+            notificationTitle: notifySubject.trim() || `Requisition ${dispatchModalReq.id} Declined by HQ Admin`,
+            notificationMessage: notifyMessage.trim(),
+            adminName: "HQ Operations Lead (jade.gelv8@gmail.com)",
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Requisition ${dispatchModalReq.id} declined and formal decline notice sent to ${dispatchModalReq.requesterEmail}!`, "info");
+          setDispatchModalReq(null);
+          await fetchBranchRequests();
+          await fetchAuditLogs();
+          onRefresh();
+        } else {
+          alert(data.error || "Failed to decline requisition");
         }
       }
     } catch (err: any) {
@@ -1694,15 +1759,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                         {!isDeclined && !isApproved && (
                           <button
-                            onClick={() => {
-                              const note = prompt("Enter reason for declining this request:");
-                              if (note !== null) {
-                                handleUpdateBranchStatus(req.id, "Declined", note || "Declined by HQ Admin.");
-                              }
-                            }}
+                            onClick={() => handleOpenDispatchModal(req, "decline")}
                             className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold text-xs rounded-xl border border-rose-200 transition-all flex items-center space-x-1"
                           >
-                            <XCircle className="w-4 h-4" />
+                            <XCircle className="w-4 h-4 text-rose-600" />
                             <span>Decline</span>
                           </button>
                         )}
@@ -1721,13 +1781,25 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-8">
             {/* Modal Header */}
-            <div className="bg-slate-900 p-5 text-white flex items-center justify-between">
+            <div className={`p-5 text-white flex items-center justify-between transition-colors ${
+              dispatchActionType === "decline" ? "bg-rose-950 border-b border-rose-900" : "bg-slate-900"
+            }`}>
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-md">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold shadow-md ${
+                  dispatchActionType === "decline"
+                    ? "bg-rose-600"
+                    : dispatchActionType === "approve"
+                    ? "bg-emerald-600"
+                    : dispatchActionType === "ship"
+                    ? "bg-indigo-600"
+                    : "bg-blue-600"
+                }`}>
                   {dispatchActionType === "approve" ? (
                     <CheckCircle2 className="w-5 h-5" />
                   ) : dispatchActionType === "ship" ? (
                     <Truck className="w-5 h-5" />
+                  ) : dispatchActionType === "decline" ? (
+                    <XCircle className="w-5 h-5" />
                   ) : (
                     <Mail className="w-5 h-5" />
                   )}
@@ -1740,6 +1812,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       ? "Mark Shipped & Send Dispatch Notice"
                       : dispatchActionType === "notify"
                       ? "Send HQ Supply Notice"
+                      : dispatchActionType === "decline"
+                      ? "Decline Requisition & Send Notice"
                       : "Notification History & Dispatch Details"}
                   </h3>
                   <p className="text-xs text-slate-300">
@@ -1802,6 +1876,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </button>
 
               <button
+                onClick={() => {
+                  setDispatchActionType("decline");
+                  handleApplyDeclinePreset("out_of_stock", dispatchModalReq);
+                }}
+                className={`pb-2.5 px-3 font-bold border-b-2 transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+                  dispatchActionType === "decline"
+                    ? "border-rose-600 text-rose-700 bg-rose-50/50"
+                    : "border-transparent text-slate-500 hover:text-rose-700"
+                }`}
+              >
+                <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                <span>4. Decline Request</span>
+              </button>
+
+              <button
                 onClick={() => setDispatchActionType("view")}
                 className={`pb-2.5 px-3 font-bold border-b-2 transition-all flex items-center space-x-1.5 whitespace-nowrap ${
                   dispatchActionType === "view"
@@ -1810,22 +1899,30 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 }`}
               >
                 <History className="w-3.5 h-3.5" />
-                <span>4. Audit History ({dispatchModalReq.notifications?.length || 0})</span>
+                <span>5. History ({dispatchModalReq.notifications?.length || 0})</span>
               </button>
             </div>
 
             {/* Modal Body */}
             <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto text-xs">
               {/* Recipient & Branch Info Box */}
-              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl flex flex-wrap items-center justify-between gap-2">
+              <div className={`p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-2 border ${
+                dispatchActionType === "decline"
+                  ? "bg-rose-50/70 border-rose-200/80"
+                  : "bg-blue-50/70 border-blue-200/80"
+              }`}>
                 <div>
-                  <div className="text-[11px] text-blue-600 font-bold uppercase tracking-wider">
+                  <div className={`text-[11px] font-bold uppercase tracking-wider ${
+                    dispatchActionType === "decline" ? "text-rose-700" : "text-blue-600"
+                  }`}>
                     Recipient / Requestor
                   </div>
                   <div className="font-extrabold text-slate-900 text-sm">
                     {dispatchModalReq.requesterName} <span className="font-normal text-xs text-slate-600">({dispatchModalReq.requesterRole})</span>
                   </div>
-                  <div className="text-xs text-blue-700 font-mono font-medium">
+                  <div className={`text-xs font-mono font-medium ${
+                    dispatchActionType === "decline" ? "text-rose-700" : "text-blue-700"
+                  }`}>
                     {dispatchModalReq.requesterEmail}
                   </div>
                 </div>
@@ -1854,7 +1951,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       {dispatchModalReq.notifications.map((notif) => (
                         <div key={notif.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-900 font-extrabold rounded-md text-[10px]">
+                            <span className={`px-2 py-0.5 font-extrabold rounded-md text-[10px] ${
+                              notif.type === "Request Declined"
+                                ? "bg-rose-100 text-rose-900 border border-rose-200"
+                                : "bg-blue-100 text-blue-900"
+                            }`}>
                               {notif.type}
                             </span>
                             <span className="text-[11px] text-slate-400">
@@ -1874,92 +1975,153 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               ) : (
                 /* EDIT & SUBMIT TAB */
                 <form onSubmit={handleExecuteDispatchSubmit} className="space-y-4">
-                  {/* Shipping & Dispatch Configuration */}
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                    <div className="font-bold text-slate-900 flex items-center justify-between">
-                      <span className="flex items-center space-x-1.5">
-                        <Truck className="w-4 h-4 text-blue-600" />
-                        <span>Logistics &amp; Shipping Dispatch Details</span>
-                      </span>
-                    </div>
+                  {/* DECLINE SPECIFIC WORKFLOW */}
+                  {dispatchActionType === "decline" ? (
+                    <div className="p-4 bg-rose-50/80 rounded-2xl border border-rose-200 space-y-3">
+                      <div className="flex items-center space-x-2 text-rose-900 font-bold text-xs">
+                        <XCircle className="w-4 h-4 text-rose-600" />
+                        <span>Select Standard Decline Reason (or customize below):</span>
+                      </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Shipping Status Stage
-                        </label>
-                        <select
-                          value={notifyShippingStatus}
-                          onChange={(e: any) => setNotifyShippingStatus(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleApplyDeclinePreset("out_of_stock", dispatchModalReq)}
+                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+                            declineReasonPreset === "out_of_stock"
+                              ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-300 hover:border-rose-300"
+                          }`}
                         >
-                          <option value="Preparing for Dispatch">📦 Preparing for Dispatch (HQ Warehouse)</option>
-                          <option value="Shipped Out & En Route">🚚 Shipped Out &amp; En Route</option>
-                          <option value="Ready for Pickup">🏢 Ready for Branch Pickup</option>
-                          <option value="Delivered">✅ Delivered to Branch</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Estimated Delivery Date
-                        </label>
-                        <input
-                          type="date"
-                          value={notifyETA}
-                          onChange={(e) => setNotifyETA(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Courier / Delivery Fleet
-                        </label>
-                        <select
-                          value={notifyCourier}
-                          onChange={(e) => setNotifyCourier(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                          📦 Stock Depleted
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyDeclinePreset("spec_revision", dispatchModalReq)}
+                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+                            declineReasonPreset === "spec_revision"
+                              ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-300 hover:border-rose-300"
+                          }`}
                         >
-                          <option value="GELV Logistics Fleet (Van #1 - Paranaque)">GELV Logistics Fleet (Van #1 - Paranaque)</option>
-                          <option value="GELV Logistics Fleet (Van #4 - Rizal/East)">GELV Logistics Fleet (Van #4 - Rizal/East)</option>
-                          <option value="Lalamove 4-Wheel MPV Fleet">Lalamove 4-Wheel MPV Fleet</option>
-                          <option value="Grab Express High-Capacity Delivery">Grab Express High-Capacity Delivery</option>
-                          <option value="J&T Express Commercial Cargo">J&T Express Commercial Cargo</option>
-                          <option value="Branch Designated Courier Pickup">Branch Designated Courier Pickup</option>
-                          <option value="Other">Other / Custom Logistics</option>
-                        </select>
+                          📐 Specs Need Revision
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyDeclinePreset("quota_exceeded", dispatchModalReq)}
+                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+                            declineReasonPreset === "quota_exceeded"
+                              ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-300 hover:border-rose-300"
+                          }`}
+                        >
+                          📊 Quota Limit Reached
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyDeclinePreset("discontinued", dispatchModalReq)}
+                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+                            declineReasonPreset === "discontinued"
+                              ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-300 hover:border-rose-300"
+                          }`}
+                        >
+                          ⛔ Material Discontinued
+                        </button>
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Waybill / Tracking Number
-                        </label>
-                        <input
-                          type="text"
-                          value={notifyTracking}
-                          onChange={(e) => setNotifyTracking(e.target.value)}
-                          placeholder="e.g. TRK-GELV-88210"
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
+                      <div className="text-[11px] text-rose-700 bg-white/80 p-2.5 rounded-xl border border-rose-200">
+                        <strong>Notice:</strong> Declining will automatically update this request's status to <strong>Declined</strong> and send this email/in-app notice to <strong>{dispatchModalReq.requesterEmail}</strong>.
                       </div>
                     </div>
-
-                    {notifyCourier === "Other" && (
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Custom Courier Name &amp; Contact
-                        </label>
-                        <input
-                          type="text"
-                          value={notifyCustomCourier}
-                          onChange={(e) => setNotifyCustomCourier(e.target.value)}
-                          placeholder="e.g. Independent Transport Lead - Mario (0917-123-4567)"
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
+                  ) : (
+                    /* Shipping & Dispatch Configuration for Approve/Ship/Memo */
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                      <div className="font-bold text-slate-900 flex items-center justify-between">
+                        <span className="flex items-center space-x-1.5">
+                          <Truck className="w-4 h-4 text-blue-600" />
+                          <span>Logistics &amp; Shipping Dispatch Details</span>
+                        </span>
                       </div>
-                    )}
-                  </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Shipping Status Stage
+                          </label>
+                          <select
+                            value={notifyShippingStatus}
+                            onChange={(e: any) => setNotifyShippingStatus(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                          >
+                            <option value="Preparing for Dispatch">📦 Preparing for Dispatch (HQ Warehouse)</option>
+                            <option value="Shipped Out & En Route">🚚 Shipped Out &amp; En Route</option>
+                            <option value="Ready for Pickup">🏢 Ready for Branch Pickup</option>
+                            <option value="Delivered">✅ Delivered to Branch</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Estimated Delivery Date
+                          </label>
+                          <input
+                            type="date"
+                            value={notifyETA}
+                            onChange={(e) => setNotifyETA(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Courier / Delivery Fleet
+                          </label>
+                          <select
+                            value={notifyCourier}
+                            onChange={(e) => setNotifyCourier(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                          >
+                            <option value="GELV Logistics Fleet (Van #1 - Paranaque)">GELV Logistics Fleet (Van #1 - Paranaque)</option>
+                            <option value="GELV Logistics Fleet (Van #4 - Rizal/East)">GELV Logistics Fleet (Van #4 - Rizal/East)</option>
+                            <option value="Lalamove 4-Wheel MPV Fleet">Lalamove 4-Wheel MPV Fleet</option>
+                            <option value="Grab Express High-Capacity Delivery">Grab Express High-Capacity Delivery</option>
+                            <option value="J&T Express Commercial Cargo">J&T Express Commercial Cargo</option>
+                            <option value="Branch Designated Courier Pickup">Branch Designated Courier Pickup</option>
+                            <option value="Other">Other / Custom Logistics</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Waybill / Tracking Number
+                          </label>
+                          <input
+                            type="text"
+                            value={notifyTracking}
+                            onChange={(e) => setNotifyTracking(e.target.value)}
+                            placeholder="e.g. TRK-GELV-88210"
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {notifyCourier === "Other" && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Custom Courier Name &amp; Contact
+                          </label>
+                          <input
+                            type="text"
+                            value={notifyCustomCourier}
+                            onChange={(e) => setNotifyCustomCourier(e.target.value)}
+                            placeholder="e.g. Independent Transport Lead - Mario (0917-123-4567)"
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Stock Decrement Checkbox (for Approve mode) */}
                   {dispatchActionType === "approve" && (
@@ -1981,8 +2143,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <div className="space-y-3">
                     <div className="font-bold text-slate-900 flex items-center justify-between">
                       <span className="flex items-center space-x-1.5">
-                        <Mail className="w-4 h-4 text-blue-600" />
-                        <span>Email &amp; In-App Notification to Requestor</span>
+                        {dispatchActionType === "decline" ? (
+                          <XCircle className="w-4 h-4 text-rose-600" />
+                        ) : (
+                          <Mail className="w-4 h-4 text-blue-600" />
+                        )}
+                        <span>
+                          {dispatchActionType === "decline"
+                            ? "Decline Notification Sent to Requestor"
+                            : "Email & In-App Notification to Requestor"}
+                        </span>
                       </span>
                       <span className="text-[11px] text-slate-400">
                         Dispatched to: {dispatchModalReq.requesterEmail}
@@ -2048,6 +2218,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             ? "bg-emerald-600 hover:bg-emerald-700"
                             : dispatchActionType === "ship"
                             ? "bg-indigo-600 hover:bg-indigo-700"
+                            : dispatchActionType === "decline"
+                            ? "bg-rose-600 hover:bg-rose-700"
                             : "bg-blue-600 hover:bg-blue-700"
                         }`}
                       >
@@ -2058,12 +2230,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           </>
                         ) : (
                           <>
-                            <Send className="w-4 h-4" />
+                            {dispatchActionType === "decline" ? (
+                              <XCircle className="w-4 h-4" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
                             <span>
                               {dispatchActionType === "approve"
                                 ? "Approve & Send Notification"
                                 : dispatchActionType === "ship"
                                 ? "Mark Shipped & Send Notice"
+                                : dispatchActionType === "decline"
+                                ? "Decline Request & Send Notification"
                                 : "Send Notice to Requestor"}
                             </span>
                           </>

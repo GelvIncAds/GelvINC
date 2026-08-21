@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Building2,
   PackageCheck,
@@ -81,8 +81,48 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
   // Cart / Requisition Items State
   const [itemSelectionMode, setItemSelectionMode] = useState<"database" | "custom">("database");
   const [selectedItemId, setSelectedItemId] = useState<string>("");
+  const [catalogSearch, setCatalogSearch] = useState<string>("");
+  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>("All");
   const [requestQty, setRequestQty] = useState<number>(1);
   const [dbItemPriority, setDbItemPriority] = useState<"Normal" | "High Priority" | "Emergency Restock">("Normal");
+
+  // Filtered Catalog Items for Database Mode Search
+  const availableCategories = useMemo(() => {
+    const cats = Array.from(new Set(items.map((i) => i.category).filter(Boolean)));
+    return ["All", ...cats];
+  }, [items]);
+
+  const filteredCatalogItems = useMemo(() => {
+    return items.filter((item) => {
+      // Category filter
+      if (catalogCategoryFilter !== "All" && item.category !== catalogCategoryFilter) {
+        return false;
+      }
+      // Text search
+      if (!catalogSearch.trim()) return true;
+      const q = catalogSearch.toLowerCase().trim();
+      return (
+        item.title?.toLowerCase().includes(q) ||
+        item.sku?.toLowerCase().includes(q) ||
+        item.brand?.toLowerCase().includes(q) ||
+        item.category?.toLowerCase().includes(q) ||
+        item.dimensions?.toLowerCase().includes(q) ||
+        item.thickness?.toLowerCase().includes(q) ||
+        item.description?.toLowerCase().includes(q)
+      );
+    });
+  }, [items, catalogSearch, catalogCategoryFilter]);
+
+  // Sync selected item with search results
+  useEffect(() => {
+    if (filteredCatalogItems.length > 0) {
+      if (!selectedItemId || !filteredCatalogItems.some((i) => i.id === selectedItemId)) {
+        setSelectedItemId(filteredCatalogItems[0].id);
+      }
+    } else {
+      setSelectedItemId("");
+    }
+  }, [filteredCatalogItems, selectedItemId]);
 
   // Custom Item Form State (Free entry unrestricted by database)
   const [customTitle, setCustomTitle] = useState("");
@@ -857,19 +897,91 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                 {/* MODE 1: FROM HQ DATABASE */}
                 {itemSelectionMode === "database" && (
                   <div className="space-y-4">
+                    {/* Live Catalog Search & Filter Controls */}
+                    <div className="bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100/80 space-y-2.5">
+                      <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                        <div className="relative flex-1">
+                          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500" />
+                          <input
+                            type="text"
+                            value={catalogSearch}
+                            onChange={(e) => setCatalogSearch(e.target.value)}
+                            placeholder="Search catalog materials by name, SKU, brand, dimensions..."
+                            className="w-full pl-9 pr-8 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 bg-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-xs"
+                          />
+                          {catalogSearch && (
+                            <button
+                              type="button"
+                              onClick={() => setCatalogSearch("")}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200"
+                              title="Clear search"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center space-x-2 shrink-0">
+                          <label className="text-[11px] font-bold text-slate-600">Category:</label>
+                          <select
+                            value={catalogCategoryFilter}
+                            onChange={(e) => setCatalogCategoryFilter(e.target.value)}
+                            className="py-2 px-3 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
+                          >
+                            {availableCategories.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {cat === "All" ? "All Categories" : cat}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                        <span>
+                          Showing <strong className="text-slate-800">{filteredCatalogItems.length}</strong> of {items.length} materials
+                          {catalogSearch && <span> matching &ldquo;<strong className="text-indigo-700">{catalogSearch}</strong>&rdquo;</span>}
+                        </span>
+                        {(catalogSearch || catalogCategoryFilter !== "All") && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCatalogSearch("");
+                              setCatalogCategoryFilter("All");
+                            }}
+                            className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline"
+                          >
+                            Reset filters
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-slate-50 p-4 rounded-2xl border border-slate-200">
                       <div className="sm:col-span-5 space-y-1">
-                        <label className="block text-xs font-bold text-slate-700">Choose HQ Material Item</label>
+                        <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                          <span>Choose HQ Material Item</span>
+                          {filteredCatalogItems.length > 0 && (
+                            <span className="text-[10px] text-indigo-600 font-bold font-mono">
+                              ({filteredCatalogItems.length} available)
+                            </span>
+                          )}
+                        </label>
                         <select
                           value={selectedItemId}
                           onChange={(e) => setSelectedItemId(e.target.value)}
-                          className="w-full p-2.5 border rounded-xl text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                          disabled={filteredCatalogItems.length === 0}
+                          className="w-full p-2.5 border rounded-xl text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-100 disabled:text-slate-400"
                         >
-                          {items.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.sku ? `[${item.sku}] ` : `[${item.category}] `}{item.brand ? `(${item.brand}) ` : ""}{item.title} (HQ Stock: {item.stock})
-                            </option>
-                          ))}
+                          {filteredCatalogItems.length === 0 ? (
+                            <option value="">No materials match current search</option>
+                          ) : (
+                            filteredCatalogItems.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.sku ? `[${item.sku}] ` : `[${item.category}] `}{item.brand ? `(${item.brand}) ` : ""}{item.title} (HQ Stock: {item.stock})
+                              </option>
+                            ))
+                          )}
                         </select>
                       </div>
 
@@ -917,13 +1029,31 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                         <button
                           type="button"
                           onClick={handleAddItemToCart}
-                          className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-1 transition-all"
+                          disabled={!selectedItemId || filteredCatalogItems.length === 0}
+                          className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-1 transition-all"
                         >
                           <Plus className="w-4 h-4" />
                           <span>Add Item</span>
                         </button>
                       </div>
                     </div>
+
+                    {filteredCatalogItems.length === 0 && (
+                      <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>No catalog items match &ldquo;<strong>{catalogSearch}</strong>&rdquo;.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setItemSelectionMode("custom")}
+                          className="text-xs font-bold text-indigo-700 hover:text-indigo-900 underline flex items-center space-x-1"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          <span>Switch to Custom Requisition</span>
+                        </button>
+                      </div>
+                    )}
 
                     {/* Selected Item Details Preview */}
                     {selectedItemId && (() => {
@@ -1510,17 +1640,29 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                         </div>
 
                         {/* Always show latest notification */}
-                        <div className="bg-white p-3 rounded-xl border border-blue-100 space-y-1">
+                        <div className={`p-3 rounded-xl border space-y-1 ${
+                          notifList[0].type === "Request Declined"
+                            ? "bg-rose-50/70 border-rose-200"
+                            : "bg-white border-blue-100"
+                        }`}>
                           <div className="flex items-center justify-between text-[11px]">
-                            <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-extrabold text-[10px]">
+                            <span className={`px-2 py-0.5 rounded font-extrabold text-[10px] ${
+                              notifList[0].type === "Request Declined"
+                                ? "bg-rose-200/80 text-rose-900 border border-rose-300"
+                                : "bg-blue-50 text-blue-700"
+                            }`}>
                               Latest Notice: {notifList[0].type}
                             </span>
                             <span className="text-slate-400">
                               {new Date(notifList[0].timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
-                          <div className="font-bold text-xs text-slate-900">{notifList[0].title}</div>
-                          <p className="text-slate-600 text-xs whitespace-pre-line leading-relaxed">
+                          <div className={`font-bold text-xs ${
+                            notifList[0].type === "Request Declined" ? "text-rose-950" : "text-slate-900"
+                          }`}>{notifList[0].title}</div>
+                          <p className={`text-xs whitespace-pre-line leading-relaxed ${
+                            notifList[0].type === "Request Declined" ? "text-rose-800" : "text-slate-600"
+                          }`}>
                             {notifList[0].message}
                           </p>
                           <div className="text-[10px] text-slate-400 pt-0.5">
@@ -1532,9 +1674,17 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                         {isExpanded && notifList.length > 1 && (
                           <div className="space-y-2 pt-1 border-t border-slate-200">
                             {notifList.slice(1).map((notif) => (
-                              <div key={notif.id} className="bg-white/80 p-3 rounded-xl border border-slate-200 space-y-1 text-xs">
+                              <div key={notif.id} className={`p-3 rounded-xl border space-y-1 text-xs ${
+                                notif.type === "Request Declined"
+                                  ? "bg-rose-50/50 border-rose-200"
+                                  : "bg-white/80 border-slate-200"
+                              }`}>
                                 <div className="flex items-center justify-between text-[11px]">
-                                  <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                  <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                    notif.type === "Request Declined"
+                                      ? "bg-rose-100 text-rose-800 border border-rose-200"
+                                      : "bg-slate-100 text-slate-700"
+                                  }`}>
                                     {notif.type}
                                   </span>
                                   <span className="text-slate-400">

@@ -738,19 +738,25 @@ async function startServer() {
     if (notifyRequester) {
       if (!targetReq.notifications) targetReq.notifications = [];
 
-      let notifType: 'Approval Notice' | 'Shipped Out' | 'Delivered' | 'General Update' = 'Approval Notice';
+      let notifType: 'Approval Notice' | 'Shipped Out' | 'Delivered' | 'General Update' | 'Request Declined' = 'Approval Notice';
       if (status === "Approved & Dispatched") {
         notifType = targetReq.shippingStatus === "Shipped Out & En Route" ? "Shipped Out" : "Approval Notice";
+      } else if (status === "Declined") {
+        notifType = "Request Declined";
       } else if (status === "Completed" || targetReq.shippingStatus === "Delivered") {
         notifType = "Delivered";
       } else {
         notifType = "General Update";
       }
 
-      const notifTitle = notifType === "Shipped Out"
+      const notifTitle = notificationMessage && req.body.notificationTitle
+        ? req.body.notificationTitle
+        : notifType === "Shipped Out"
         ? `Requisition ${targetReq.id} Shipped Out by HQ`
         : notifType === "Approval Notice"
         ? `Requisition ${targetReq.id} Approved by HQ`
+        : notifType === "Request Declined"
+        ? `Requisition ${targetReq.id} Declined by HQ Admin`
         : `Requisition ${targetReq.id} Status Update`;
 
       const notifMsg = notificationMessage || (
@@ -758,6 +764,8 @@ async function startServer() {
           ? `Your requested materials have been packed and shipped out via ${targetReq.courierName || 'GELV Logistics Fleet'}. Tracking: ${targetReq.trackingNumber || 'N/A'}. ETA: ${targetReq.estimatedDeliveryDate || 'Upcoming delivery'}.`
           : notifType === "Approval Notice"
           ? `HQ has approved your branch requisition of ${targetReq.items.length} material item(s). Warehouse preparation is underway.`
+          : notifType === "Request Declined"
+          ? `HQ has declined your branch requisition (${targetReq.id}). Reason: ${targetReq.hqNotes || 'Material unavailable or request specifications could not be fulfilled at this time.'}`
           : `Requisition status updated to '${targetReq.status}' with note: ${targetReq.hqNotes || 'No notes provided.'}`
       );
 
@@ -838,11 +846,15 @@ async function startServer() {
       ? `Materials Shipped Out for Requisition ${targetReq.id}`
       : notificationType === "Approval Notice"
       ? `Requisition ${targetReq.id} Approved`
+      : notificationType === "Request Declined"
+      ? `Requisition ${targetReq.id} Declined by HQ Admin`
       : `HQ Supply Update for Requisition ${targetReq.id}`;
 
     const defaultMessage = message || (
       notificationType === "Shipped Out"
         ? `Items have been dispatched from Headquarters via ${targetReq.courierName || 'Logistics Fleet'} (Waybill: ${targetReq.trackingNumber || 'Pending'}). Expected delivery: ${targetReq.estimatedDeliveryDate || 'Soon'}.`
+        : notificationType === "Request Declined"
+        ? `HQ Admin has declined your branch requisition ${targetReq.id}. Reason: ${targetReq.hqNotes || 'Material unavailable or request specifications could not be fulfilled at this time.'}`
         : `Your branch requisition ${targetReq.id} has been processed by HQ Admin.`
     );
 
