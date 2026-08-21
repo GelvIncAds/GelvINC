@@ -75,6 +75,7 @@ export interface EmployeeAccount {
   lastPasswordReset?: string;
   resetRecoveryToken?: string;
   recoveryNote?: string;
+  tempPassword?: string;
   picture?: string;
 }
 

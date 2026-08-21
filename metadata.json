@@ -1,6 +1,6 @@
 {
   "name": "GELV INC Advertising",
-  "description": "Real-time advertising, tarpaulin, and signage inventory showcase and management portal with Google Authentication and live stock updates.",
+  "description": "Real-time advertising, tarpaulin, and signage inventory showcase and management portal with Google Authentication, standardized branch roles, and admin password controls.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -304,7 +304,7 @@ export const GoogleAuthModal: React.FC = () => {
                   <select
                     value={selectedBranchForGoogle}
                     onChange={(e) => setSelectedBranchForGoogle(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
+                    className="w-full px-3 py-2 text-xs border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-black"
                   >
                     {OFFICIAL_BRANCHES.map((b) => (
                       <option key={b.code} value={b.name}>
@@ -372,7 +372,7 @@ export const GoogleAuthModal: React.FC = () => {
                       value={signUpName}
                       onChange={(e) => setSignUpName(e.target.value)}
                       placeholder="e.g. Maria Santos"
-                      className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm text-black font-medium placeholder:text-slate-400 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -387,7 +387,7 @@ export const GoogleAuthModal: React.FC = () => {
                       value={signUpEmail}
                       onChange={(e) => setSignUpEmail(e.target.value)}
                       placeholder="your.email@company.com"
-                      className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm text-black font-medium placeholder:text-slate-400 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -402,7 +402,7 @@ export const GoogleAuthModal: React.FC = () => {
                       value={signUpPassword}
                       onChange={(e) => setSignUpPassword(e.target.value)}
                       placeholder="At least 6 characters"
-                      className="w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      className="w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm text-black font-medium placeholder:text-slate-400 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     />
                     <button
                       type="button"
@@ -422,7 +422,7 @@ export const GoogleAuthModal: React.FC = () => {
                       <select
                         value={signUpBranch}
                         onChange={(e) => setSignUpBranch(e.target.value)}
-                        className="w-full pl-9 pr-2 py-2.5 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium truncate"
+                        className="w-full pl-9 pr-2 py-2.5 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-black truncate"
                       >
                         {OFFICIAL_BRANCHES.map((b) => (
                           <option key={b.code} value={b.name}>
@@ -440,7 +440,7 @@ export const GoogleAuthModal: React.FC = () => {
                       <select
                         value={signUpRole}
                         onChange={(e) => setSignUpRole(e.target.value)}
-                        className="w-full pl-9 pr-2 py-2.5 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                        className="w-full pl-9 pr-2 py-2.5 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-black"
                       >
                         {COMPANY_ROLES.map((r) => (
                           <option key={r} value={r}>
@@ -555,7 +555,7 @@ export const GoogleAuthModal: React.FC = () => {
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
                       placeholder="your.email@company.com"
-                      className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm text-black font-medium placeholder:text-slate-400 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -570,7 +570,7 @@ export const GoogleAuthModal: React.FC = () => {
                       value={signInPassword}
                       onChange={(e) => setSignInPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      className="w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm text-black font-medium placeholder:text-slate-400 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     />
                     <button
                       type="button"

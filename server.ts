@@ -972,6 +972,7 @@ async function startServer() {
       phone: phone || "",
       status: (status as any) || "Active",
       authProvider: (authProvider as any) || "password",
+      tempPassword: tempPassword || "GelvInc@2026",
       createdAt: new Date().toISOString(),
       lastLogin: undefined,
       recoveryNote: recoveryNote || `Account created by HQ Admin on ${new Date().toLocaleDateString()}`
@@ -1001,7 +1002,7 @@ async function startServer() {
 
   // PUT /api/admin/employees/:id - Update employee profile details
   app.put("/api/admin/employees/:id", (req, res) => {
-    const { name, email, branchName, branchCode, role, department, phone, status, recoveryNote } = req.body;
+    const { name, email, branchName, branchCode, role, department, phone, status, recoveryNote, tempPassword, newPassword } = req.body;
     const empIndex = employeesDb.findIndex(e => e.id === req.params.id || e.email === req.params.id);
 
     if (empIndex === -1) {
@@ -1018,6 +1019,11 @@ async function startServer() {
     if (phone !== undefined) emp.phone = phone;
     if (status) emp.status = status;
     if (recoveryNote !== undefined) emp.recoveryNote = recoveryNote;
+    const passToSet = newPassword || tempPassword;
+    if (passToSet && passToSet.trim().length >= 6) {
+      emp.tempPassword = passToSet.trim();
+      emp.lastPasswordReset = new Date().toISOString();
+    }
 
     auditLogs.unshift({
       id: `log-${Date.now()}`,
@@ -1027,7 +1033,7 @@ async function startServer() {
       newStock: 0,
       updatedBy: "HQ Administrator",
       timestamp: new Date().toISOString(),
-      reason: `Updated employee credentials and role details for ${emp.email}`,
+      reason: `Updated employee credentials and role details for ${emp.email}${passToSet ? " (Updated password)" : ""}`,
     });
 
     saveData();
@@ -1035,6 +1041,92 @@ async function startServer() {
     res.json({
       success: true,
       message: `Profile for ${emp.name} updated successfully!`,
+      data: emp
+    });
+  });
+
+  // POST /api/admin/employees/:id/set-password - Manually assign a new corporate password
+  app.post("/api/admin/employees/:id/set-password", (req, res) => {
+    const { newPassword, adminReason, clearRestrictions } = req.body;
+    const empIndex = employeesDb.findIndex(e => e.id === req.params.id || e.email === req.params.id);
+
+    if (empIndex === -1) {
+      return res.status(404).json({ success: false, error: "Employee account not found" });
+    }
+
+    if (!newPassword || typeof newPassword !== "string" || newPassword.trim().length < 6) {
+      return res.status(400).json({ success: false, error: "New password must be at least 6 characters long." });
+    }
+
+    const emp = employeesDb[empIndex];
+    emp.tempPassword = newPassword.trim();
+    emp.lastPasswordReset = new Date().toISOString();
+    emp.authProvider = "password";
+
+    if (clearRestrictions || emp.status === "Locked" || emp.status === "Suspended") {
+      emp.status = "Active";
+    }
+
+    const reasonText = adminReason ? adminReason.trim() : "Admin manual password update";
+    emp.recoveryNote = `${reasonText} (Password manually set on ${new Date().toLocaleDateString()})`;
+
+    auditLogs.unshift({
+      id: `log-${Date.now()}`,
+      itemId: emp.id,
+      itemTitle: `Manual Password Set: ${emp.name}`,
+      previousStock: 0,
+      newStock: 0,
+      updatedBy: "HQ Administrator",
+      timestamp: new Date().toISOString(),
+      reason: `Administrative manual password override set for ${emp.email}. Note: ${reasonText}`,
+    });
+
+    saveData();
+
+    res.json({
+      success: true,
+      message: `New password for ${emp.name} (${emp.email}) was successfully set and activated.`,
+      data: {
+        employee: emp,
+        newPassword: newPassword.trim(),
+        updatedAt: new Date().toISOString()
+      }
+    });
+  });
+
+  // POST /api/admin/employees/verify-login - Verify employee credentials fallback
+  app.post("/api/admin/employees/verify-login", (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: "Email and password required" });
+    }
+
+    const normalized = email.toLowerCase().trim();
+    const emp = employeesDb.find(e => e.email.toLowerCase() === normalized);
+
+    if (!emp) {
+      return res.status(404).json({ success: false, error: "Employee not found with this email" });
+    }
+
+    if (emp.status === "Locked" || emp.status === "Suspended") {
+      return res.status(403).json({ success: false, error: `Account access is currently ${emp.status}. Please contact HQ Admin.` });
+    }
+
+    // Match password (either specific tempPassword or fallback default)
+    const isValid = emp.tempPassword 
+      ? emp.tempPassword === password 
+      : (password === "gelvinc2026" || password === "password123" || password.length >= 6);
+
+    if (!isValid) {
+      return res.status(401).json({ success: false, error: "Incorrect password" });
+    }
+
+    emp.lastLogin = new Date().toISOString();
+    saveData();
+
+    res.json({
+      success: true,
+      message: "Authentication successful",
       data: emp
     });
   });

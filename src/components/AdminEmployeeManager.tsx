@@ -43,6 +43,12 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [editingEmployee, setEditingEmployee] = useState<EmployeeAccount | null>(null);
   const [deletingEmployee, setDeletingEmployee] = useState<EmployeeAccount | null>(null);
+  const [passwordModalEmployee, setPasswordModalEmployee] = useState<EmployeeAccount | null>(null);
+  const [quickPassword, setQuickPassword] = useState<string>("");
+  const [quickPasswordReason, setQuickPasswordReason] = useState<string>("Admin set new password");
+  const [showQuickPassword, setShowQuickPassword] = useState<boolean>(false);
+  const [copiedQuickCreds, setCopiedQuickCreds] = useState<boolean>(false);
+  const [assignedCredsData, setAssignedCredsData] = useState<{ email: string; name: string; pass: string } | null>(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -54,8 +60,10 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
     department: "Advertising & Production",
     phone: "",
     status: "Active" as 'Active' | 'Locked' | 'Suspended' | 'Pending Verification',
+    tempPassword: "",
     recoveryNote: "",
   });
+  const [showFormPassword, setShowFormPassword] = useState<boolean>(false);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -102,8 +110,22 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
     }));
   };
 
+  // Generate strong random password helper
+  const generatePassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    const symbols = "@#$!";
+    let randomPart = "";
+    for (let i = 0; i < 4; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const sym = symbols.charAt(Math.floor(Math.random() * symbols.length));
+    const num = Math.floor(1000 + Math.random() * 9000);
+    return `Gelv${sym}${num}${randomPart}`;
+  };
+
   // Open Create Modal
   const handleOpenCreate = () => {
+    const defaultPass = generatePassword();
     setFormData({
       name: "",
       email: "",
@@ -113,8 +135,10 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
       department: "Production & Signage",
       phone: "",
       status: "Active",
+      tempPassword: defaultPass,
       recoveryNote: "Provisioned by HQ Administrator",
     });
+    setShowFormPassword(true);
     setFormError(null);
     setShowCreateModal(true);
   };
@@ -131,9 +155,63 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
       department: emp.department || "Operations",
       phone: emp.phone || "",
       status: emp.status,
+      tempPassword: emp.tempPassword || "",
       recoveryNote: emp.recoveryNote || "",
     });
+    setShowFormPassword(false);
     setFormError(null);
+  };
+
+  // Open Quick Set Password Modal
+  const handleOpenSetPasswordModal = (emp: EmployeeAccount) => {
+    setPasswordModalEmployee(emp);
+    const newPass = generatePassword();
+    setQuickPassword(newPass);
+    setQuickPasswordReason(`Admin manual password update requested for ${emp.name}`);
+    setShowQuickPassword(true);
+    setAssignedCredsData(null);
+    setFormError(null);
+  };
+
+  // Submit Quick Manual Password
+  const handleQuickPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordModalEmployee) return;
+
+    if (!quickPassword || quickPassword.trim().length < 6) {
+      setFormError("New password must be at least 6 characters long.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFormError(null);
+
+    try {
+      const res = await fetch(`/api/admin/employees/${passwordModalEmployee.id}/set-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          newPassword: quickPassword.trim(),
+          adminReason: quickPasswordReason,
+          clearRestrictions: true,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Failed to set password");
+
+      setAssignedCredsData({
+        email: passwordModalEmployee.email,
+        name: passwordModalEmployee.name,
+        pass: quickPassword.trim(),
+      });
+
+      showToast(`New password for ${passwordModalEmployee.name} has been set and activated!`);
+      await fetchEmployees();
+    } catch (err: any) {
+      setFormError(err.message || "Failed to assign new password.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Submit Create or Edit
@@ -465,6 +543,15 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end space-x-1.5">
+                          {/* Quick Set Password Button */}
+                          <button
+                            onClick={() => handleOpenSetPasswordModal(emp)}
+                            title="Manually Set New Corporate Password"
+                            className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                          >
+                            <KeyRound className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Quick Lock/Unlock */}
                           <button
                             onClick={() => handleToggleStatus(emp)}
@@ -477,17 +564,6 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
                           >
                             {emp.status === "Active" ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                           </button>
-
-                          {/* Reset & Recovery Direct Link */}
-                          {onSwitchToRecovery && (
-                            <button
-                              onClick={() => onSwitchToRecovery(emp.email)}
-                              title="Go to Reset & Recovery Portal for this account"
-                              className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
-                            >
-                              <KeyRound className="w-3.5 h-3.5" />
-                            </button>
-                          )}
 
                           {/* Edit Details */}
                           <button
@@ -657,6 +733,45 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
                 </div>
               </div>
 
+              {/* Corporate Login Password Field */}
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-300 font-bold">
+                    Corporate Login Password {editingEmployee ? "(Leave empty to keep existing)" : "*"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newP = generatePassword();
+                      setFormData({ ...formData, tempPassword: newP });
+                      setShowFormPassword(true);
+                    }}
+                    className="text-[11px] text-blue-400 hover:text-blue-300 font-bold flex items-center space-x-1"
+                  >
+                    <span>Auto-Generate</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showFormPassword ? "text" : "password"}
+                    value={formData.tempPassword}
+                    onChange={(e) => setFormData({ ...formData, tempPassword: e.target.value })}
+                    placeholder="e.g. GelvInc@2026 or custom password"
+                    className="w-full bg-white text-black font-semibold rounded-xl pl-3.5 pr-10 py-2.5 placeholder-slate-400 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowFormPassword(!showFormPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800"
+                  >
+                    {showFormPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Password will be active immediately and allows the employee to log in via branch portal.
+                </p>
+              </div>
+
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
@@ -675,6 +790,159 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK MANUALLY SET PASSWORD MODAL */}
+      {passwordModalEmployee && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl w-full max-w-lg p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Manually Set Password</h3>
+                  <p className="text-xs text-slate-400">
+                    Assign a new corporate login password for <span className="text-white font-bold">{passwordModalEmployee.name}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setPasswordModalEmployee(null); setAssignedCredsData(null); }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {formError && (
+              <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs font-semibold flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            {assignedCredsData ? (
+              <div className="mt-5 space-y-4 text-xs">
+                <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center space-x-2 text-emerald-400 font-bold">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Password Successfully Set & Activated!</span>
+                  </div>
+                  <div className="bg-slate-950 p-3 rounded-xl border border-emerald-500/20 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Employee Email:</span>
+                      <span className="text-white font-mono font-bold">{assignedCredsData.email}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">New Password:</span>
+                      <span className="text-emerald-400 font-mono font-black text-sm bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                        {assignedCredsData.pass}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = `GELV INC Advertising - Account Credentials\nName: ${assignedCredsData.name}\nEmail: ${assignedCredsData.email}\nNew Password: ${assignedCredsData.pass}\nBranch: ${passwordModalEmployee.branchName}`;
+                      navigator.clipboard.writeText(text);
+                      setCopiedQuickCreds(true);
+                      setTimeout(() => setCopiedQuickCreds(false), 3000);
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center space-x-1.5 transition-colors shadow-lg"
+                  >
+                    {copiedQuickCreds ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedQuickCreds ? "Credentials Copied!" : "Copy Credentials"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setPasswordModalEmployee(null); setAssignedCredsData(null); }}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleQuickPasswordSubmit} className="mt-5 space-y-4 text-xs">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-slate-300 font-bold">
+                      New Password * <span className="text-slate-500 font-normal">(Min. 6 alphanumeric characters)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickPassword(generatePassword());
+                        setShowQuickPassword(true);
+                      }}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center space-x-1"
+                    >
+                      <span>Auto-Generate</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showQuickPassword ? "text" : "password"}
+                      required
+                      value={quickPassword}
+                      onChange={(e) => setQuickPassword(e.target.value)}
+                      placeholder="Enter new password (e.g. Gelv#2026!kR)"
+                      className="w-full bg-white text-black font-semibold rounded-xl pl-3.5 pr-10 py-2.5 placeholder-slate-400 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickPassword(!showQuickPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800"
+                    >
+                      {showQuickPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1.5">
+                    Administrative Audit Reason
+                  </label>
+                  <input
+                    type="text"
+                    value={quickPasswordReason}
+                    onChange={(e) => setQuickPasswordReason(e.target.value)}
+                    placeholder="e.g. Employee requested password reset via branch manager"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 text-[11px] text-slate-400">
+                  <p>Setting this password will immediately update the database and activate the account if currently locked or suspended.</p>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => { setPasswordModalEmployee(null); }}
+                    className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !quickPassword}
+                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold shadow-lg shadow-indigo-600/20 transition-all flex items-center space-x-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{isSubmitting ? "Setting Password..." : "Save & Activate New Password"}</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

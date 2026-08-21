@@ -318,38 +318,98 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
-      const fbUser = credential.user;
-      const isUserAdmin = ADMIN_EMAILS.includes(normalizedEmail);
-
-      let branchName = isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign";
-      let branchCode = isUserAdmin ? "GELV-01" : "GPS-02";
-      let role = isUserAdmin ? "CEO" : "Branch Manager";
+      let signedInUser: GoogleUser | null = null;
+      let isUserAdmin = ADMIN_EMAILS.includes(normalizedEmail);
 
       try {
-        const userDocRef = doc(db, "users", fbUser.uid);
-        const userSnap = await getDoc(userDocRef);
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          if (data.branchName) branchName = data.branchName;
-          if (data.branchCode) branchCode = data.branchCode;
-          if (data.role) role = data.role;
-        }
-        await setDoc(userDocRef, { lastLogin: new Date().toISOString() }, { merge: true });
-      } catch (e) {
-        console.warn("Could not retrieve Firestore user record:", e);
-      }
+        const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+        const fbUser = credential.user;
 
-      const signedInUser: GoogleUser = {
-        id: fbUser.uid,
-        name: fbUser.displayName || normalizedEmail.split("@")[0],
-        email: normalizedEmail,
-        picture: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fbUser.displayName || normalizedEmail)}`,
-        givenName: fbUser.displayName ? fbUser.displayName.split(" ")[0] : normalizedEmail.split("@")[0],
-        branchName,
-        branchCode,
-        role,
-      };
+        let branchName = isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign";
+        let branchCode = isUserAdmin ? "GELV-01" : "GPS-02";
+        let role = isUserAdmin ? "CEO" : "Branch Manager";
+
+        try {
+          const userDocRef = doc(db, "users", fbUser.uid);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            if (data.branchName) branchName = data.branchName;
+            if (data.branchCode) branchCode = data.branchCode;
+            if (data.role) role = data.role;
+          }
+          await setDoc(userDocRef, { lastLogin: new Date().toISOString() }, { merge: true });
+        } catch (e) {
+          console.warn("Could not retrieve Firestore user record:", e);
+        }
+
+        signedInUser = {
+          id: fbUser.uid,
+          name: fbUser.displayName || normalizedEmail.split("@")[0],
+          email: normalizedEmail,
+          picture: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fbUser.displayName || normalizedEmail)}`,
+          givenName: fbUser.displayName ? fbUser.displayName.split(" ")[0] : normalizedEmail.split("@")[0],
+          branchName,
+          branchCode,
+          role,
+        };
+      } catch (firebaseErr: any) {
+        // Fallback: Check backend database for admin-set corporate password
+        const verifyRes = await fetch("/api/admin/employees/verify-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: normalizedEmail, password }),
+        });
+
+        if (verifyRes.ok) {
+          const json = await verifyRes.json();
+          if (json.success && json.data) {
+            const emp = json.data;
+            const fallbackUid = emp.uid || `emp-${emp.id}`;
+            const photoURL = emp.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(emp.name || normalizedEmail)}`;
+
+            signedInUser = {
+              id: fallbackUid,
+              name: emp.name,
+              email: emp.email,
+              picture: photoURL,
+              givenName: emp.name.split(" ")[0] || normalizedEmail.split("@")[0],
+              branchName: emp.branchName,
+              branchCode: emp.branchCode,
+              role: emp.role,
+            };
+
+            // Also try creating Firebase Auth account in background so future logins succeed on Firebase too
+            createUserWithEmailAndPassword(auth, normalizedEmail, password)
+              .then(async (cred) => {
+                try {
+                  await updateProfile(cred.user, { displayName: emp.name, photoURL });
+                  const userDocRef = doc(db, "users", cred.user.uid);
+                  await setDoc(userDocRef, {
+                    id: cred.user.uid,
+                    name: emp.name,
+                    email: normalizedEmail,
+                    picture: photoURL,
+                    branchName: emp.branchName,
+                    branchCode: emp.branchCode,
+                    role: emp.role,
+                    createdAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                  }, { merge: true });
+                } catch (e) {
+                  console.warn("Background Firebase sync error:", e);
+                }
+              })
+              .catch(() => {
+                // Ignore background sync errors
+              });
+          }
+        }
+
+        if (!signedInUser) {
+          throw firebaseErr;
+        }
+      }
 
       setUser(signedInUser);
       if (isUserAdmin) setIsAdmin(true);
