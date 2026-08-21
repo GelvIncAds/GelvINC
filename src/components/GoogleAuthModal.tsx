@@ -13,9 +13,14 @@ import {
   UserPlus, 
   LogIn, 
   Sparkles,
-  Briefcase
+  Briefcase,
+  Globe,
+  Copy,
+  Check,
+  ExternalLink,
+  Info
 } from "lucide-react";
-import { OFFICIAL_BRANCHES } from "../data/branches";
+import { OFFICIAL_BRANCHES, COMPANY_ROLES } from "../data/branches";
 
 export const GoogleAuthModal: React.FC = () => {
   const { 
@@ -36,7 +41,7 @@ export const GoogleAuthModal: React.FC = () => {
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpBranch, setSignUpBranch] = useState(OFFICIAL_BRANCHES[1].name);
-  const [signUpRole, setSignUpRole] = useState("Branch Production Lead");
+  const [signUpRole, setSignUpRole] = useState("Graphic Artist");
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   // Sign In Form State
@@ -44,16 +49,32 @@ export const GoogleAuthModal: React.FC = () => {
   const [signInPassword, setSignInPassword] = useState("");
   const [showSignInPassword, setShowSignInPassword] = useState(false);
 
+  // Domain help toggle & copy state
+  const [copiedDomain, setCopiedDomain] = useState(false);
+  const [showDomainGuide, setShowDomainGuide] = useState(false);
+
   // Google Branch choice
   const [selectedBranchForGoogle, setSelectedBranchForGoogle] = useState(OFFICIAL_BRANCHES[1].name);
 
   if (!showAuthModal) return null;
 
+  const handleCopyDomain = () => {
+    navigator.clipboard.writeText("gelvincads.github.io");
+    setCopiedDomain(true);
+    setTimeout(() => setCopiedDomain(false), 2000);
+  };
+
+  const isUnauthorizedDomain = authError && (
+    authError.includes("unauthorized-domain") || 
+    authError.includes("gelvincads.github.io") ||
+    authError.includes("Authorized domains")
+  );
+
   const handleActualGoogleLogin = async () => {
     const branchObj = OFFICIAL_BRANCHES.find(b => b.name === selectedBranchForGoogle) || OFFICIAL_BRANCHES[1];
     await signInWithActualGoogle({
       preferredBranchName: branchObj.name,
-      preferredRole: branchObj.managerRole || "Branch Production Lead"
+      preferredRole: branchObj.managerRole || "Branch Manager"
     });
   };
 
@@ -178,12 +199,88 @@ export const GoogleAuthModal: React.FC = () => {
         <div className="p-6 space-y-5 overflow-y-auto">
           {/* Error Notice */}
           {authError && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 flex items-start space-x-3 text-xs text-red-800 animate-in fade-in">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold">Authentication Notice</p>
-                <p>{authError}</p>
+            <div className={`rounded-2xl p-4 flex flex-col space-y-3 text-xs animate-in fade-in ${
+              isUnauthorizedDomain 
+                ? "bg-amber-50 border-2 border-amber-300 text-amber-900" 
+                : "bg-red-50 border border-red-200 text-red-800"
+            }`}>
+              <div className="flex items-start space-x-3">
+                <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isUnauthorizedDomain ? "text-amber-600" : "text-red-600"}`} />
+                <div className="flex-1">
+                  <p className="font-bold text-sm">{isUnauthorizedDomain ? "GitHub Pages Domain Authorization Required" : "Authentication Notice"}</p>
+                  <p className="mt-1 leading-relaxed">{authError}</p>
+                </div>
               </div>
+
+              {isUnauthorizedDomain && (
+                <div className="bg-white/90 rounded-xl p-3.5 border border-amber-200 space-y-2.5 text-slate-800">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[11px] uppercase tracking-wider text-slate-600">Authorized Domain Value to Add:</span>
+                    <button
+                      type="button"
+                      onClick={handleCopyDomain}
+                      className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5"
+                    >
+                      {copiedDomain ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedDomain ? "Copied!" : "Copy Domain"}</span>
+                    </button>
+                  </div>
+                  
+                  <div className="bg-slate-900 text-amber-300 px-3 py-2 rounded-lg font-mono text-xs font-bold select-all flex items-center justify-between">
+                    <span>gelvincads.github.io</span>
+                    <span className="text-[10px] text-slate-400 font-sans font-normal">(Do NOT include /gelvinc or https://)</span>
+                  </div>
+
+                  <div className="text-[11px] text-slate-600 space-y-1.5 pt-1">
+                    <div className="font-semibold text-slate-800">How to authorize in 30 seconds:</div>
+                    <ol className="list-decimal pl-4 space-y-1">
+                      <li>Open <a href="https://console.firebase.google.com/project/gen-lang-client-0842081261/authentication/settings" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-bold inline-flex items-center gap-0.5">Firebase Console Settings <ExternalLink className="w-2.5 h-2.5" /></a></li>
+                      <li>Scroll down to <strong>Authorized domains</strong> &rarr; Click <strong>Add domain</strong></li>
+                      <li>Enter <code className="bg-slate-100 px-1 py-0.5 rounded font-bold text-slate-900">gelvincads.github.io</code> and click <strong>Save</strong>.</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-200 text-[11px] text-emerald-800 font-medium">
+                    ✨ <strong>Immediate Alternative:</strong> You can also sign up or sign in using <strong>Email & Password</strong> below right away without waiting!
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Quick Domain Setup Pill (expandable) */}
+          {!isUnauthorizedDomain && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setShowDomainGuide(!showDomainGuide)}
+                className="text-[11px] text-slate-500 hover:text-blue-600 font-medium inline-flex items-center gap-1 transition-colors"
+              >
+                <Globe className="w-3 h-3" />
+                <span>{showDomainGuide ? "Hide Domain Authorization Guide" : "Deploying to GitHub Pages? View Domain Guide"}</span>
+              </button>
+
+              {showDomainGuide && (
+                <div className="mt-2 text-left bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-700 space-y-2 animate-in fade-in">
+                  <div className="flex items-center justify-between font-bold text-slate-900">
+                    <span className="flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-blue-600" />
+                      GitHub Pages Domain Configuration
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyDomain}
+                      className="px-2 py-0.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-[11px] font-bold transition-all flex items-center space-x-1"
+                    >
+                      {copiedDomain ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedDomain ? "Copied" : "Copy gelvincads.github.io"}</span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-600">
+                    Firebase Authentication requires the root domain name in its whitelist. In <a href="https://console.firebase.google.com/project/gen-lang-client-0842081261/authentication/settings" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold">Firebase Console &rarr; Auth Settings</a>, add <code className="bg-slate-200 px-1 rounded font-bold text-slate-900">gelvincads.github.io</code> (do not include repository subpath like <code className="text-red-500">/gelvinc</code>).
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -337,7 +434,7 @@ export const GoogleAuthModal: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Work Role</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Work Role / Position</label>
                     <div className="relative">
                       <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                       <select
@@ -345,11 +442,11 @@ export const GoogleAuthModal: React.FC = () => {
                         onChange={(e) => setSignUpRole(e.target.value)}
                         className="w-full pl-9 pr-2 py-2.5 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium"
                       >
-                        <option value="Branch Production Lead">Branch Production Lead</option>
-                        <option value="Branch Manager">Branch Manager</option>
-                        <option value="Graphic Artist / Designer">Graphic Artist / Designer</option>
-                        <option value="Store Inventory Clerk">Store Inventory Clerk</option>
-                        <option value="HQ Supply Coordinator">HQ Supply Coordinator</option>
+                        {COMPANY_ROLES.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

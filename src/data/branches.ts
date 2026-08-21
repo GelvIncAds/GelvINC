@@ -8,21 +8,23 @@ export interface BranchInfo {
   description?: string;
 }
 
-export const MANAGER_ROLES_CATALOG = [
-  "Artist",
+export const COMPANY_ROLES = [
   "Branch Manager",
-  "Branch Manager / Artist",
-  "Main Operations Manager",
-  "Branch Production Lead",
-  "Studio Branch Manager",
-  "Branch Dispatch Lead",
-  "Graphic Artist / Layout Specialist",
-  "Production Artist",
-  "Store Supervisor",
-  "Inventory Specialist",
+  "Graphic Artist",
+  "Admin Assistant",
+  "Admin Executive",
+  "Sales Assistant",
+  "Sales Executive",
+  "Field Supervisor",
+  "Logistics",
+  "CEO",
+  "Operations Manager",
 ] as const;
 
-export type ManagerRoleType = (typeof MANAGER_ROLES_CATALOG)[number] | string;
+export const MANAGER_ROLES_CATALOG = COMPANY_ROLES;
+
+export type CompanyRole = (typeof COMPANY_ROLES)[number];
+export type ManagerRoleType = CompanyRole | string;
 
 export const OFFICIAL_BRANCHES: BranchInfo[] = [
   {
@@ -30,8 +32,8 @@ export const OFFICIAL_BRANCHES: BranchInfo[] = [
     code: "GELV-01",
     location: "Main Office - Door 11, TDRC BLDG, Sucat, Paranaque",
     badgeColor: "#2C28B5",
-    managerRole: "Main Operations Manager",
-    roles: ["Main Operations Manager", "Artist", "Inventory Specialist"],
+    managerRole: "CEO",
+    roles: ["CEO", "Operations Manager", "Admin Executive", "Admin Assistant", "Logistics"],
     description: "Primary headquarters facility and central distribution warehouse.",
   },
   {
@@ -39,8 +41,8 @@ export const OFFICIAL_BRANCHES: BranchInfo[] = [
     code: "GPS-02",
     location: "Door 0, TDRC BLDG, Sucat, Paranaque",
     badgeColor: "#F0593C",
-    managerRole: "Branch Production Lead",
-    roles: ["Branch Production Lead", "Artist", "Store Supervisor"],
+    managerRole: "Branch Manager",
+    roles: ["Branch Manager", "Graphic Artist", "Sales Executive", "Logistics"],
     description: "Specializes in large format printing and billboard substrates.",
   },
   {
@@ -48,8 +50,8 @@ export const OFFICIAL_BRANCHES: BranchInfo[] = [
     code: "VGF-03",
     location: "BF Homes, Paranaque",
     badgeColor: "#E62792",
-    managerRole: "Branch Manager / Artist",
-    roles: ["Branch Manager", "Artist", "Graphic Artist / Layout Specialist"],
+    managerRole: "Branch Manager",
+    roles: ["Branch Manager", "Graphic Artist", "Sales Assistant"],
     description: "Storefront panaflex, acrylic signage, and industrial frames.",
   },
   {
@@ -57,8 +59,8 @@ export const OFFICIAL_BRANCHES: BranchInfo[] = [
     code: "KUL-04",
     location: "Victor Medina, Kabihasnan, Paranque",
     badgeColor: "#FFF50F",
-    managerRole: "Studio Branch Manager",
-    roles: ["Studio Branch Manager", "Artist", "Color Specialist"],
+    managerRole: "Branch Manager",
+    roles: ["Branch Manager", "Graphic Artist", "Sales Executive"],
     description: "High-DPI photo papers, vinyl stickers, and color-accurate branding.",
   },
   {
@@ -66,8 +68,8 @@ export const OFFICIAL_BRANCHES: BranchInfo[] = [
     code: "TPS-05",
     location: "Mayujane BLDG, East Road, Rizal",
     badgeColor: "#121212",
-    managerRole: "Branch Dispatch Lead",
-    roles: ["Branch Dispatch Lead", "Artist", "Fabrication Lead"],
+    managerRole: "Branch Manager",
+    roles: ["Branch Manager", "Graphic Artist", "Field Supervisor", "Logistics"],
     description: "Regional distribution and rapid turnaround sign fabrication.",
   },
 ];

@@ -28,6 +28,9 @@ export interface AdItem {
   thickness?: string;
   dailyImpressions: number;
   dailyPrice?: number;
+  monthlyPrice?: number;
+  dailyReach?: number;
+  unit?: string;
   stock: number;
   totalCapacity?: number;
   status: 'Available' | 'Low Stock' | 'Sold Out' | 'Under Maintenance';
@@ -46,6 +49,33 @@ export interface GoogleUser {
   branchName?: string;
   branchCode?: string;
   role?: string;
+  accountStatus?: 'Active' | 'Locked' | 'Suspended' | 'Pending Verification';
+  authProvider?: 'google' | 'password' | 'admin-created';
+  createdAt?: string;
+  lastLogin?: string;
+  tempPassword?: string;
+  phone?: string;
+  department?: string;
+}
+
+export interface EmployeeAccount {
+  id: string;
+  uid?: string;
+  name: string;
+  email: string;
+  branchName: string;
+  branchCode: string;
+  role: string;
+  department?: string;
+  phone?: string;
+  status: 'Active' | 'Locked' | 'Suspended' | 'Pending Verification';
+  authProvider: 'google' | 'password' | 'admin-created';
+  createdAt: string;
+  lastLogin?: string;
+  lastPasswordReset?: string;
+  resetRecoveryToken?: string;
+  recoveryNote?: string;
+  picture?: string;
 }
 
 export interface Inquiry {

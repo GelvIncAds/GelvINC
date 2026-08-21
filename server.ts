@@ -3,13 +3,15 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { INITIAL_INVENTORY } from "./src/data/initialInventory";
-import { AdItem, StockAuditLog, Inquiry, InventoryStats, BranchRequest } from "./src/types";
+import { INITIAL_EMPLOYEES } from "./src/data/initialEmployees";
+import { AdItem, StockAuditLog, Inquiry, InventoryStats, BranchRequest, EmployeeAccount } from "./src/types";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const INVENTORY_FILE = path.join(DATA_DIR, "inventory.json");
 const LOGS_FILE = path.join(DATA_DIR, "audit_logs.json");
 const INQUIRIES_FILE = path.join(DATA_DIR, "inquiries.json");
 const BRANCH_REQUESTS_FILE = path.join(DATA_DIR, "branch_requests.json");
+const EMPLOYEES_FILE = path.join(DATA_DIR, "employees.json");
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -21,6 +23,7 @@ let inventoryDb: AdItem[] = [];
 let auditLogs: StockAuditLog[] = [];
 let inquiriesDb: Inquiry[] = [];
 let branchRequestsDb: BranchRequest[] = [];
+let employeesDb: EmployeeAccount[] = [];
 
 const VALID_CATEGORIES = ['Tarpaulin', 'Panaflex', 'Stickers', 'Photopapers', 'Paperstocks', 'Inks', 'Films'];
 
@@ -64,10 +67,25 @@ function loadData() {
       branchRequestsDb = getSeedBranchRequests();
       saveData();
     }
+
+    if (fs.existsSync(EMPLOYEES_FILE)) {
+      const empData = fs.readFileSync(EMPLOYEES_FILE, "utf-8");
+      const loadedEmployees = JSON.parse(empData);
+      if (Array.isArray(loadedEmployees) && loadedEmployees.length > 0) {
+        employeesDb = loadedEmployees;
+      } else {
+        employeesDb = [...INITIAL_EMPLOYEES];
+        saveData();
+      }
+    } else {
+      employeesDb = [...INITIAL_EMPLOYEES];
+      saveData();
+    }
   } catch (err) {
     console.error("Error loading stored database, reverting to seed:", err);
     inventoryDb = [...INITIAL_INVENTORY];
     branchRequestsDb = getSeedBranchRequests();
+    employeesDb = [...INITIAL_EMPLOYEES];
   }
 }
 
@@ -208,6 +226,7 @@ function saveData() {
     fs.writeFileSync(LOGS_FILE, JSON.stringify(auditLogs, null, 2), "utf-8");
     fs.writeFileSync(INQUIRIES_FILE, JSON.stringify(inquiriesDb, null, 2), "utf-8");
     fs.writeFileSync(BRANCH_REQUESTS_FILE, JSON.stringify(branchRequestsDb, null, 2), "utf-8");
+    fs.writeFileSync(EMPLOYEES_FILE, JSON.stringify(employeesDb, null, 2), "utf-8");
   } catch (err) {
     console.error("Error saving inventory database:", err);
   }
@@ -897,6 +916,243 @@ async function startServer() {
       data: targetReq,
       notification: newNotification,
     });
+  });
+
+  // === EMPLOYEE ACCOUNTS & RECOVERY APIs ===
+
+  // GET /api/admin/employees - Fetch all employee accounts
+  app.get("/api/admin/employees", (req, res) => {
+    const { branch, status, search } = req.query;
+    let list = [...employeesDb];
+
+    if (branch && typeof branch === "string" && branch !== "All") {
+      list = list.filter(e => e.branchName.toLowerCase() === branch.toLowerCase() || e.branchCode.toLowerCase() === branch.toLowerCase());
+    }
+
+    if (status && typeof status === "string" && status !== "All") {
+      list = list.filter(e => e.status === status);
+    }
+
+    if (search && typeof search === "string" && search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = list.filter(e => 
+        e.name.toLowerCase().includes(q) ||
+        e.email.toLowerCase().includes(q) ||
+        e.role.toLowerCase().includes(q) ||
+        (e.department && e.department.toLowerCase().includes(q)) ||
+        (e.phone && e.phone.includes(q))
+      );
+    }
+
+    res.json({ success: true, count: list.length, data: list });
+  });
+
+  // POST /api/admin/employees - Create new employee profile
+  app.post("/api/admin/employees", (req, res) => {
+    const { name, email, branchName, branchCode, role, department, phone, status, authProvider, recoveryNote, tempPassword } = req.body;
+
+    if (!name || !email || !branchName) {
+      return res.status(400).json({ success: false, error: "Missing required employee profile fields" });
+    }
+
+    const existing = employeesDb.find(e => e.email.toLowerCase() === email.toLowerCase().trim());
+    if (existing) {
+      return res.status(400).json({ success: false, error: `An employee with email '${email}' already exists.` });
+    }
+
+    const newEmp: EmployeeAccount = {
+      id: `EMP-${Date.now().toString().slice(-4)}`,
+      uid: `uid-emp-${Date.now()}`,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      branchName: branchName.trim(),
+      branchCode: branchCode || "GELV-01",
+      role: role || "Graphic Artist",
+      department: department || "Operations",
+      phone: phone || "",
+      status: (status as any) || "Active",
+      authProvider: (authProvider as any) || "password",
+      createdAt: new Date().toISOString(),
+      lastLogin: undefined,
+      recoveryNote: recoveryNote || `Account created by HQ Admin on ${new Date().toLocaleDateString()}`
+    };
+
+    employeesDb.unshift(newEmp);
+
+    auditLogs.unshift({
+      id: `log-${Date.now()}`,
+      itemId: newEmp.id,
+      itemTitle: `Employee Account Created: ${newEmp.name}`,
+      previousStock: 0,
+      newStock: 0,
+      updatedBy: "HQ Administrator",
+      timestamp: new Date().toISOString(),
+      reason: `Provisioned new employee profile (${newEmp.email}) for branch ${newEmp.branchName}`,
+    });
+
+    saveData();
+
+    res.status(201).json({
+      success: true,
+      message: `Employee account for ${newEmp.name} created successfully!`,
+      data: newEmp
+    });
+  });
+
+  // PUT /api/admin/employees/:id - Update employee profile details
+  app.put("/api/admin/employees/:id", (req, res) => {
+    const { name, email, branchName, branchCode, role, department, phone, status, recoveryNote } = req.body;
+    const empIndex = employeesDb.findIndex(e => e.id === req.params.id || e.email === req.params.id);
+
+    if (empIndex === -1) {
+      return res.status(404).json({ success: false, error: "Employee profile not found" });
+    }
+
+    const emp = employeesDb[empIndex];
+    if (name) emp.name = name.trim();
+    if (email) emp.email = email.trim().toLowerCase();
+    if (branchName) emp.branchName = branchName;
+    if (branchCode) emp.branchCode = branchCode;
+    if (role) emp.role = role;
+    if (department !== undefined) emp.department = department;
+    if (phone !== undefined) emp.phone = phone;
+    if (status) emp.status = status;
+    if (recoveryNote !== undefined) emp.recoveryNote = recoveryNote;
+
+    auditLogs.unshift({
+      id: `log-${Date.now()}`,
+      itemId: emp.id,
+      itemTitle: `Employee Profile Updated: ${emp.name}`,
+      previousStock: 0,
+      newStock: 0,
+      updatedBy: "HQ Administrator",
+      timestamp: new Date().toISOString(),
+      reason: `Updated employee credentials and role details for ${emp.email}`,
+    });
+
+    saveData();
+
+    res.json({
+      success: true,
+      message: `Profile for ${emp.name} updated successfully!`,
+      data: emp
+    });
+  });
+
+  // DELETE /api/admin/employees/:id - Delete employee profile
+  app.delete("/api/admin/employees/:id", (req, res) => {
+    const empIndex = employeesDb.findIndex(e => e.id === req.params.id || e.email === req.params.id);
+    if (empIndex === -1) {
+      return res.status(404).json({ success: false, error: "Employee account not found" });
+    }
+
+    const deleted = employeesDb.splice(empIndex, 1)[0];
+
+    auditLogs.unshift({
+      id: `log-${Date.now()}`,
+      itemId: deleted.id,
+      itemTitle: `Employee Account Removed: ${deleted.name}`,
+      previousStock: 0,
+      newStock: 0,
+      updatedBy: "HQ Administrator",
+      timestamp: new Date().toISOString(),
+      reason: `Permanently removed employee record (${deleted.email}) from database`,
+    });
+
+    saveData();
+
+    res.json({
+      success: true,
+      message: `Employee account ${deleted.name} (${deleted.email}) deleted.`,
+      data: deleted
+    });
+  });
+
+  // POST /api/admin/employees/:id/recover - Reset/Recover password & generate emergency access pass
+  app.post("/api/admin/employees/:id/recover", (req, res) => {
+    const { actionType, newPassword, adminReason } = req.body;
+    const empIndex = employeesDb.findIndex(e => e.id === req.params.id || e.email === req.params.id);
+
+    if (empIndex === -1) {
+      return res.status(404).json({ success: false, error: "Employee account not found" });
+    }
+
+    const emp = employeesDb[empIndex];
+    const recoveryToken = `RCV-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+    
+    emp.lastPasswordReset = new Date().toISOString();
+    emp.resetRecoveryToken = recoveryToken;
+    if (emp.status === "Locked" || emp.status === "Suspended") {
+      emp.status = "Active";
+    }
+
+    if (adminReason) {
+      emp.recoveryNote = `${adminReason} (Recovered on ${new Date().toLocaleDateString()})`;
+    }
+
+    auditLogs.unshift({
+      id: `log-${Date.now()}`,
+      itemId: emp.id,
+      itemTitle: `Account Recovery & Token Generated: ${emp.name}`,
+      previousStock: 0,
+      newStock: 0,
+      updatedBy: "HQ Administrator",
+      timestamp: new Date().toISOString(),
+      reason: `Issued recovery token [${recoveryToken}] for ${emp.email}. Action: ${actionType || 'Credential Reset'}. Note: ${adminReason || 'Admin recovery'}`,
+    });
+
+    saveData();
+
+    res.json({
+      success: true,
+      message: `Account recovery executed for ${emp.name}! Recovery Token: ${recoveryToken}`,
+      data: {
+        employee: emp,
+        recoveryToken,
+        generatedAt: new Date().toISOString(),
+        resetInstructions: `Instruct ${emp.name} (${emp.email}) to use recovery verification code ${recoveryToken} or check their official inbox for reset link.`
+      }
+    });
+  });
+
+  // POST /api/admin/employees/sync-user - Automatically register or update logged-in Google / Password user
+  app.post("/api/admin/employees/sync-user", (req, res) => {
+    const { name, email, branchName, branchCode, role, picture, authProvider } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: "Email required" });
+
+    const existingIndex = employeesDb.findIndex(e => e.email.toLowerCase() === email.toLowerCase().trim());
+    if (existingIndex !== -1) {
+      const existing = employeesDb[existingIndex];
+      existing.lastLogin = new Date().toISOString();
+      if (picture) existing.picture = picture;
+      if (branchName && existing.branchName !== branchName) existing.branchName = branchName;
+      if (branchCode && existing.branchCode !== branchCode) existing.branchCode = branchCode;
+      if (role && existing.role !== role) existing.role = role;
+      saveData();
+      return res.json({ success: true, message: "Employee session synced", data: existing });
+    }
+
+    const newEmp: EmployeeAccount = {
+      id: `EMP-${Date.now().toString().slice(-4)}`,
+      uid: `uid-${Date.now()}`,
+      name: name || email.split("@")[0],
+      email: email.trim().toLowerCase(),
+      branchName: branchName || "GELV INC Advertising",
+      branchCode: branchCode || "GELV-01",
+      role: role || "Graphic Artist",
+      department: "Branch Operations",
+      status: "Active",
+      authProvider: (authProvider as any) || "google",
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      picture: picture || undefined,
+      recoveryNote: "Auto-registered via authenticated sign-in"
+    };
+
+    employeesDb.unshift(newEmp);
+    saveData();
+
+    res.status(201).json({ success: true, message: "New employee auto-registered", data: newEmp });
   });
 
   // === VITE / STATIC MIDDLEWARE ===

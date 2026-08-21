@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { AdItem, AdCategory, BranchRequest, BranchRequestItem, GoogleUser } from "../types";
 import { generateBranchRequestPDF } from "../utils/pdfGenerator";
-import { OFFICIAL_BRANCHES, MANAGER_ROLES_CATALOG } from "../data/branches";
+import { OFFICIAL_BRANCHES, COMPANY_ROLES, MANAGER_ROLES_CATALOG } from "../data/branches";
 import { useAuth } from "../context/AuthContext";
 
 interface BranchRequestPortalProps {
@@ -69,7 +69,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
   const [requesterName, setRequesterName] = useState(user?.name || "");
   const [requesterEmail, setRequesterEmail] = useState(user?.email || "");
   const [requesterRole, setRequesterRole] = useState(
-    user?.role || defaultBranchObj.managerRole || "Branch Store Manager"
+    user?.role || defaultBranchObj.managerRole || "Branch Manager"
   );
   const [requiredByDate, setRequiredByDate] = useState(() => {
     const d = new Date();
@@ -784,18 +784,18 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                       required
                       value={requesterRole}
                       onChange={(e) => setRequesterRole(e.target.value)}
-                      placeholder="e.g. Artist, Branch Manager"
+                      placeholder="e.g. Branch Manager, Graphic Artist"
                       className="w-full p-3 border rounded-2xl text-xs sm:text-sm text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium"
                     />
                     <datalist id="manager-roles-catalog">
-                      {MANAGER_ROLES_CATALOG.map((role) => (
+                      {COMPANY_ROLES.map((role) => (
                         <option key={role} value={role} />
                       ))}
                     </datalist>
 
-                    {/* Quick Role Select Chips including Artist */}
+                    {/* Quick Role Select Chips */}
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {["Artist", "Branch Manager", "Branch Manager / Artist", "Branch Production Lead"].map((r) => (
+                      {COMPANY_ROLES.map((r) => (
                         <button
                           key={r}
                           type="button"
@@ -806,7 +806,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                               : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200"
                           }`}
                         >
-                          {r === "Artist" ? "🎨 Artist" : r}
+                          {r}
                         </button>
                       ))}
                     </div>

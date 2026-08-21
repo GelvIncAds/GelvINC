@@ -52,6 +52,7 @@ interface AuthContextType {
 }
 
 const ADMIN_EMAILS = [
+  "jade.gelv8@gmail.com",
   "admin@gelvinc.com", 
   "supplychain@gelvinc.com",
   "hq@gelvinc.com",
@@ -127,8 +128,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return "Invalid email or password. Please check your credentials or create a new account.";
       case "auth/popup-closed-by-user":
         return "Google sign-in popup was closed before completion.";
+      case "auth/popup-blocked":
+        return "The Google sign-in window was blocked by browser pop-up settings. Please allow pop-ups or use email sign-in.";
       case "auth/unauthorized-domain":
-        return "OAuth domain not authorized. You can sign up using Email & Password instantly!";
+        return "Firebase OAuth Error: Domain 'gelvincads.github.io' needs to be authorized in Firebase Console -> Authentication -> Settings -> Authorized domains. (Add only 'gelvincads.github.io' without paths). You can also sign in/up with Email & Password below instantly!";
       case "auth/network-request-failed":
         return "Network connection error. Please check your internet connection.";
       default:
@@ -151,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           let branchName = isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign";
           let branchCode = isUserAdmin ? "GELV-01" : "GPS-02";
-          let role = isUserAdmin ? "HQ Supply Chain Admin" : "Branch Production Lead";
+          let role = isUserAdmin ? "CEO" : "Branch Manager";
 
           if (userSnap.exists()) {
             const data = userSnap.data();
@@ -199,7 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             givenName: fbUser.displayName ? fbUser.displayName.split(" ")[0] : userEmail.split("@")[0],
             branchName: isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign",
             branchCode: isUserAdmin ? "GELV-01" : "GPS-02",
-            role: isUserAdmin ? "HQ Supply Chain Admin" : "Branch Production Lead",
+            role: isUserAdmin ? "CEO" : "Branch Manager",
           };
           setUser(resolvedUser);
           if (isUserAdmin) setIsAdmin(true);
@@ -238,7 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const branchObj = OFFICIAL_BRANCHES.find(b => b.name === branchName) || OFFICIAL_BRANCHES[1];
       const branchCode = branchObj.code;
-      const userRole = role || branchObj.managerRole || "Branch Production Staff";
+      const userRole = role || branchObj.managerRole || "Graphic Artist";
       const normalizedEmail = email.trim().toLowerCase();
       const isUserAdmin = ADMIN_EMAILS.includes(normalizedEmail);
 
@@ -267,7 +270,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           picture: photoURL,
           branchName: isUserAdmin ? "GELV INC Advertising" : branchName,
           branchCode: isUserAdmin ? "GELV-01" : branchCode,
-          role: isUserAdmin ? "HQ Supply Chain Admin" : userRole,
+          role: isUserAdmin ? "CEO" : userRole,
           createdAt: new Date().toISOString(),
           lastLogin: new Date().toISOString()
         }, { merge: true });
@@ -283,7 +286,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         givenName: name.split(" ")[0] || normalizedEmail.split("@")[0],
         branchName: isUserAdmin ? "GELV INC Advertising" : branchName,
         branchCode: isUserAdmin ? "GELV-01" : branchCode,
-        role: isUserAdmin ? "HQ Supply Chain Admin" : userRole,
+        role: isUserAdmin ? "CEO" : userRole,
       };
 
       setUser(signedUpUser);
@@ -321,7 +324,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let branchName = isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign";
       let branchCode = isUserAdmin ? "GELV-01" : "GPS-02";
-      let role = isUserAdmin ? "HQ Supply Chain Admin" : "Branch Production Lead";
+      let role = isUserAdmin ? "CEO" : "Branch Manager";
 
       try {
         const userDocRef = doc(db, "users", fbUser.uid);
@@ -377,7 +380,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let branchName = options?.preferredBranchName || (isUserAdmin ? "GELV INC Advertising" : "Great Print & Sign");
       const branchObj = OFFICIAL_BRANCHES.find(b => b.name === branchName) || OFFICIAL_BRANCHES[1];
       let branchCode = branchObj.code;
-      let role = options?.preferredRole || (isUserAdmin ? "HQ Supply Chain Admin" : (branchObj.managerRole || "Branch Production Lead"));
+      let role = options?.preferredRole || (isUserAdmin ? "CEO" : (branchObj.managerRole || "Branch Manager"));
 
       try {
         const userDocRef = doc(db, "users", fbUser.uid);
@@ -468,7 +471,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const verifyAndEnableAdmin = (passcode: string): boolean => {
-    if (passcode.trim() === "admin123" || passcode.trim() === "admin" || passcode.trim() === "123456") {
+    const cleaned = passcode.trim().toLowerCase();
+    if (
+      cleaned === "admin123" || 
+      cleaned === "gelv2026" || 
+      cleaned === "gelvadmin" || 
+      cleaned === "admin" || 
+      cleaned === "123456" ||
+      cleaned === "hq-supply-admin"
+    ) {
       setIsAdmin(true);
       setShowAdminPasscodeModal(false);
       return true;

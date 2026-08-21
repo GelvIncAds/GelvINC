@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { AdItem, StockAuditLog, Inquiry, AdCategory, BranchRequest } from "../types";
 import { generateRequestPDF, generateBranchRequestPDF } from "../utils/pdfGenerator";
 import { OFFICIAL_BRANCHES } from "../data/branches";
+import { AdminEmployeeManager } from "./AdminEmployeeManager";
+import { AdminInventoryCatalogManager } from "./AdminInventoryCatalogManager";
+import { AdminAccountRecovery } from "./AdminAccountRecovery";
 import {
   Database,
   Plus,
@@ -50,6 +53,9 @@ import {
   MapPin,
   ExternalLink,
   Store,
+  KeyRound,
+  ShieldCheck,
+  UserCheck,
 } from "lucide-react";
 
 interface AdminPortalProps {
@@ -74,7 +80,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [auditLogs, setAuditLogs] = useState<StockAuditLog[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [branchRequests, setBranchRequests] = useState<BranchRequest[]>([]);
-  const [activeAdminTab, setActiveAdminTab] = useState<"stock" | "add" | "logs" | "inquiries" | "branch-requests">("stock");
+  const [activeAdminTab, setActiveAdminTab] = useState<
+    "employees" | "catalog-manager" | "recovery" | "stock" | "add" | "logs" | "inquiries" | "branch-requests"
+  >("employees");
+  const [targetRecoveryEmail, setTargetRecoveryEmail] = useState<string>("");
 
   // Branch Requests Filter State
   const [branchFilterBranch, setBranchFilterBranch] = useState<string>("All");
@@ -655,81 +664,162 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
         {/* Tab Navigation sub-bar */}
         <div className="mt-6 pt-6 border-t border-slate-800 flex flex-wrap gap-2">
+          {/* 1. EMPLOYEE ACCOUNTS SUBSECTION */}
+          <button
+            onClick={() => setActiveAdminTab("employees")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+              activeAdminTab === "employees"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Employee Accounts Portal</span>
+          </button>
+
+          {/* 2. INVENTORY CATALOGS SUBSECTION */}
+          <button
+            onClick={() => setActiveAdminTab("catalog-manager")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+              activeAdminTab === "catalog-manager"
+                ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Inventory Catalogs</span>
+          </button>
+
+          {/* 3. RESET & RECOVERY SUBSECTION */}
+          <button
+            onClick={() => setActiveAdminTab("recovery")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+              activeAdminTab === "recovery"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>Reset & Recovery Hub</span>
+          </button>
+
+          <div className="h-6 w-[1px] bg-slate-800 self-center hidden sm:block mx-1" />
+
+          {/* Quick Manual Stock Editor */}
           <button
             onClick={() => setActiveAdminTab("stock")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
               activeAdminTab === "stock"
-                ? "bg-amber-500 text-slate-950 shadow"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-slate-700 text-white shadow"
+                : "bg-slate-800/70 text-slate-400 hover:bg-slate-800"
             }`}
           >
-            <Database className="w-4 h-4" />
-            <span>Manual Stock DB Editor</span>
+            <Database className="w-3.5 h-3.5" />
+            <span>Stock Editor</span>
           </button>
 
+          {/* Add New Material */}
           <button
             onClick={() => setActiveAdminTab("add")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
               activeAdminTab === "add"
-                ? "bg-amber-500 text-slate-950 shadow"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-slate-700 text-white shadow"
+                : "bg-slate-800/70 text-slate-400 hover:bg-slate-800"
             }`}
           >
-            <Plus className="w-4 h-4" />
-            <span>Add New Material</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Substrate</span>
           </button>
 
+          {/* Audit Trail */}
           <button
             onClick={() => {
               setActiveAdminTab("logs");
               fetchAuditLogs();
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
               activeAdminTab === "logs"
-                ? "bg-amber-500 text-slate-950 shadow"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-slate-700 text-white shadow"
+                : "bg-slate-800/70 text-slate-400 hover:bg-slate-800"
             }`}
           >
-            <History className="w-4 h-4" />
-            <span>Audit Trail Logs ({auditLogs.length})</span>
+            <History className="w-3.5 h-3.5" />
+            <span>Audit Logs ({auditLogs.length})</span>
           </button>
 
+          {/* Inbox */}
           <button
             onClick={() => {
               setActiveAdminTab("inquiries");
               fetchInquiries();
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
               activeAdminTab === "inquiries"
-                ? "bg-amber-500 text-slate-950 shadow"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-slate-700 text-white shadow"
+                : "bg-slate-800/70 text-slate-400 hover:bg-slate-800"
             }`}
           >
-            <FileText className="w-4 h-4" />
-            <span>Admin Request Forms & Inbox ({inquiries.length})</span>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Inquiries ({inquiries.length})</span>
           </button>
 
+          {/* Branch Requisitions */}
           <button
             onClick={() => {
               setActiveAdminTab("branch-requests");
               fetchBranchRequests();
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
               activeAdminTab === "branch-requests"
-                ? "bg-amber-500 text-slate-950 shadow"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-slate-700 text-white shadow"
+                : "bg-slate-800/70 text-slate-400 hover:bg-slate-800"
             }`}
           >
-            <Building2 className="w-4 h-4" />
-            <span>Branch Requisitions to HQ ({branchRequests.length})</span>
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Requisitions ({branchRequests.length})</span>
             {branchRequests.filter((b) => b.status === "Pending HQ Review").length > 0 && (
-              <span className="ml-1.5 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px]">
-                {branchRequests.filter((b) => b.status === "Pending HQ Review").length} NEW
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[9px]">
+                {branchRequests.filter((b) => b.status === "Pending HQ Review").length}
               </span>
             )}
           </button>
         </div>
       </div>
+
+      {/* 1. SUBSECTION VIEW: EMPLOYEE ACCOUNTS MANAGER */}
+      {activeAdminTab === "employees" && (
+        <AdminEmployeeManager
+          onSwitchToRecovery={(email) => {
+            if (email) setTargetRecoveryEmail(email);
+            setActiveAdminTab("recovery");
+          }}
+        />
+      )}
+
+      {/* 2. SUBSECTION VIEW: INVENTORY CATALOGS */}
+      {activeAdminTab === "catalog-manager" && (
+        <AdminInventoryCatalogManager
+          items={items}
+          onAddItem={onAddItem}
+          onUpdateStock={onUpdateStock}
+          onDeleteItem={onDeleteItem}
+          onOpenCalibration={(item) => {
+            setCalibratingItem(item);
+            setCalibrationMode("add");
+            setAddQty(5);
+            setReasonPreset("Inbound Delivery Shipment");
+          }}
+          onRefresh={onRefresh}
+        />
+      )}
+
+      {/* 3. SUBSECTION VIEW: RESET & RECOVER EMPLOYEE ACCOUNTS */}
+      {activeAdminTab === "recovery" && (
+        <AdminAccountRecovery
+          initialEmail={targetRecoveryEmail}
+          onClearInitialEmail={() => setTargetRecoveryEmail("")}
+        />
+      )}
 
       {/* Main Tab Content: ENHANCED DIRECT DATABASE STOCK & RECALIBRATION EDITOR */}
       {activeAdminTab === "stock" && (
