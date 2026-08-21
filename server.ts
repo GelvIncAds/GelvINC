@@ -225,7 +225,7 @@ async function startServer() {
 
   // GET /api/inventory - Search and filter inventory in real-time
   app.get("/api/inventory", (req, res) => {
-    const { q, category, city, status, minPrice, maxPrice, inStockOnly } = req.query;
+    const { q, category, status, minPrice, maxPrice, inStockOnly } = req.query;
 
     let results = [...inventoryDb];
 
@@ -237,8 +237,6 @@ async function startServer() {
           (item.sku && item.sku.toLowerCase().includes(queryLower)) ||
           (item.brand && item.brand.toLowerCase().includes(queryLower)) ||
           (item.thickness && item.thickness.toLowerCase().includes(queryLower)) ||
-          item.location.toLowerCase().includes(queryLower) ||
-          item.city.toLowerCase().includes(queryLower) ||
           item.category.toLowerCase().includes(queryLower) ||
           item.description.toLowerCase().includes(queryLower)
       );
@@ -246,10 +244,6 @@ async function startServer() {
 
     if (category && typeof category === "string" && category !== "All") {
       results = results.filter((item) => item.category === category);
-    }
-
-    if (city && typeof city === "string" && city !== "All") {
-      results = results.filter((item) => item.city === city);
     }
 
     if (status && typeof status === "string" && status !== "All") {
@@ -261,11 +255,11 @@ async function startServer() {
     }
 
     if (minPrice && !isNaN(Number(minPrice))) {
-      results = results.filter((item) => item.dailyPrice >= Number(minPrice));
+      results = results.filter((item) => (item.dailyPrice || 0) >= Number(minPrice));
     }
 
     if (maxPrice && !isNaN(Number(maxPrice))) {
-      results = results.filter((item) => item.dailyPrice <= Number(maxPrice));
+      results = results.filter((item) => (item.dailyPrice || 0) <= Number(maxPrice));
     }
 
     res.json({
@@ -367,14 +361,11 @@ async function startServer() {
       brand,
       title,
       category,
-      location,
-      city,
       dimensions,
       thickness,
       dailyImpressions,
       dailyPrice,
       stock,
-      totalCapacity,
       imageUrl,
       description,
       specs,
@@ -391,14 +382,11 @@ async function startServer() {
       brand: brand ? String(brand).trim() : undefined,
       title,
       category,
-      location: location || "Main Warehouse",
-      city: city || "Main Facility",
       dimensions: dimensions || "Standard Specs",
       thickness: thickness || "Standard Thickness",
       dailyImpressions: Number(dailyImpressions) || 100000,
       dailyPrice: dailyPrice !== undefined ? Number(dailyPrice) : 0,
       stock: newItemStock,
-      totalCapacity: Number(totalCapacity) || Math.max(newItemStock, 50),
       status: newItemStock === 0 ? "Sold Out" : newItemStock <= 2 ? "Low Stock" : "Available",
       imageUrl: imageUrl || "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?auto=format&fit=crop&w=1200&q=80",
       description: description || "Premium outdoor printing and advertising substrate with high-durability finish.",
@@ -474,6 +462,19 @@ async function startServer() {
     }
 
     const deleted = inventoryDb.splice(itemIndex, 1)[0];
+    
+    // Add audit log entry for deletion
+    auditLogs.unshift({
+      id: `log-${Date.now()}`,
+      itemId: deleted.id,
+      itemTitle: `${deleted.title} (Deleted)`,
+      previousStock: deleted.stock,
+      newStock: 0,
+      updatedBy: "Admin System",
+      timestamp: new Date().toISOString(),
+      reason: "Permanent Item Deletion from Inventory DB",
+    });
+
     saveData();
 
     res.json({ success: true, message: `Deleted ${deleted.title}` });

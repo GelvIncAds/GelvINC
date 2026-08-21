@@ -22,14 +22,14 @@ export interface AdItem {
   brand?: string;
   title: string;
   category: AdCategory;
-  location: string;
-  city: string;
+  location?: string;
+  city?: string;
   dimensions: string;
   thickness?: string;
   dailyImpressions: number;
   dailyPrice?: number;
   stock: number;
-  totalCapacity: number;
+  totalCapacity?: number;
   status: 'Available' | 'Low Stock' | 'Sold Out' | 'Under Maintenance';
   imageUrl: string;
   description: string;
@@ -69,6 +69,7 @@ export interface BranchRequestItem {
   itemTitle: string;
   category: AdCategory | string;
   requestedQuantity: number;
+  priority?: 'Normal' | 'High Priority' | 'Emergency Restock';
   sku?: string;
   brand?: string;
   dimensions?: string;

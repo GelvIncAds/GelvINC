@@ -76,13 +76,13 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
     d.setDate(d.getDate() + 5);
     return d.toISOString().split("T")[0];
   });
-  const [priority, setPriority] = useState<"Normal" | "High Priority" | "Emergency Restock">("Normal");
   const [purpose, setPurpose] = useState("");
 
   // Cart / Requisition Items State
   const [itemSelectionMode, setItemSelectionMode] = useState<"database" | "custom">("database");
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [requestQty, setRequestQty] = useState<number>(1);
+  const [dbItemPriority, setDbItemPriority] = useState<"Normal" | "High Priority" | "Emergency Restock">("Normal");
 
   // Custom Item Form State (Free entry unrestricted by database)
   const [customTitle, setCustomTitle] = useState("");
@@ -93,6 +93,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
   const [customUnit, setCustomUnit] = useState("Rolls");
   const [customNotes, setCustomNotes] = useState("");
   const [customQty, setCustomQty] = useState<number>(1);
+  const [customItemPriority, setCustomItemPriority] = useState<"Normal" | "High Priority" | "Emergency Restock">("Normal");
 
   const [requestCart, setRequestCart] = useState<BranchRequestItem[]>([]);
 
@@ -198,8 +199,8 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
 
     setErrorMessage(null);
 
-    // Check if already in cart
-    const existingIndex = requestCart.findIndex((c) => c.itemId === selectedItemId);
+    // Check if already in cart with same priority
+    const existingIndex = requestCart.findIndex((c) => c.itemId === selectedItemId && (c.priority || "Normal") === dbItemPriority);
     if (existingIndex !== -1) {
       const updated = [...requestCart];
       updated[existingIndex].requestedQuantity += requestQty;
@@ -214,6 +215,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
           brand: itemObj.brand,
           sku: itemObj.sku,
           requestedQuantity: requestQty,
+          priority: dbItemPriority,
           dimensions: itemObj.dimensions,
           unitPrice: itemObj.dailyPrice,
           unit: "Rolls",
@@ -247,6 +249,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
       dimensions: customDimensions.trim() || "Custom Specs",
       specs: customDimensions.trim() || undefined,
       unit: customUnit,
+      priority: customItemPriority,
       notes: customNotes.trim() || undefined,
       requestedQuantity: customQty,
       isCustom: true,
@@ -285,6 +288,12 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
       ? customBranchName.trim()
       : selectedBranch;
 
+    const effectivePriority = requestCart.some((i) => i.priority === "Emergency Restock")
+      ? "Emergency Restock"
+      : requestCart.some((i) => i.priority === "High Priority")
+      ? "High Priority"
+      : "Normal";
+
     const payload = {
       branchName: effectiveBranchName,
       branchCode,
@@ -292,7 +301,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
       requesterEmail: requesterEmail.trim(),
       requesterRole,
       requiredByDate,
-      priority,
+      priority: effectivePriority,
       purpose: purpose.trim() || "Branch stock replenishment & local client installations",
       items: requestCart,
     };
@@ -778,34 +787,17 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      Required By Date
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={requiredByDate}
-                      onChange={(e) => setRequiredByDate(e.target.value)}
-                      className="w-full p-3 border rounded-2xl text-xs sm:text-sm font-medium text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      Priority Level
-                    </label>
-                    <select
-                      value={priority}
-                      onChange={(e: any) => setPriority(e.target.value)}
-                      className="w-full p-3 border rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      <option value="Normal">Normal Restock</option>
-                      <option value="High Priority">High Priority</option>
-                      <option value="Emergency Restock">Emergency Restock</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Required By Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={requiredByDate}
+                    onChange={(e) => setRequiredByDate(e.target.value)}
+                    className="w-full p-3 border rounded-2xl text-xs sm:text-sm font-medium text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
                 </div>
 
                 <div>
@@ -865,8 +857,8 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                 {/* MODE 1: FROM HQ DATABASE */}
                 {itemSelectionMode === "database" && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                      <div className="sm:col-span-7 space-y-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                      <div className="sm:col-span-5 space-y-1">
                         <label className="block text-xs font-bold text-slate-700">Choose HQ Material Item</label>
                         <select
                           value={selectedItemId}
@@ -882,12 +874,25 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                       </div>
 
                       <div className="sm:col-span-3 space-y-1">
-                        <label className="block text-xs font-bold text-slate-700">Requested Qty</label>
-                        <div className="flex items-center space-x-2">
+                        <label className="block text-xs font-bold text-slate-700">Item Priority</label>
+                        <select
+                          value={dbItemPriority}
+                          onChange={(e: any) => setDbItemPriority(e.target.value)}
+                          className="w-full p-2.5 border rounded-xl text-xs font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                        >
+                          <option value="Normal">🟢 Normal Restock</option>
+                          <option value="High Priority">🔥 High Priority</option>
+                          <option value="Emergency Restock">🚨 Emergency</option>
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-2 space-y-1">
+                        <label className="block text-xs font-bold text-slate-700">Req. Qty</label>
+                        <div className="flex items-center space-x-1">
                           <button
                             type="button"
                             onClick={() => setRequestQty(Math.max(1, requestQty - 1))}
-                            className="w-8 h-8 rounded-lg bg-slate-200 text-slate-800 font-bold hover:bg-slate-300 flex items-center justify-center text-sm"
+                            className="w-7 h-8 rounded-lg bg-slate-200 text-slate-800 font-bold hover:bg-slate-300 flex items-center justify-center text-sm"
                           >
                             -
                           </button>
@@ -896,12 +901,12 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                             min={1}
                             value={requestQty}
                             onChange={(e) => setRequestQty(Math.max(1, parseInt(e.target.value) || 1))}
-                            className="w-14 text-center p-1.5 border rounded-lg text-xs font-bold text-slate-800 bg-white"
+                            className="w-12 text-center p-1.5 border rounded-lg text-xs font-bold text-slate-800 bg-white"
                           />
                           <button
                             type="button"
                             onClick={() => setRequestQty(requestQty + 1)}
-                            className="w-8 h-8 rounded-lg bg-slate-200 text-slate-800 font-bold hover:bg-slate-300 flex items-center justify-center text-sm"
+                            className="w-7 h-8 rounded-lg bg-slate-200 text-slate-800 font-bold hover:bg-slate-300 flex items-center justify-center text-sm"
                           >
                             +
                           </button>
@@ -915,7 +920,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                           className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-1 transition-all"
                         >
                           <Plus className="w-4 h-4" />
-                          <span>Add</span>
+                          <span>Add Item</span>
                         </button>
                       </div>
                     </div>
@@ -931,7 +936,6 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                           )}
                           <div><strong>Dimensions:</strong> {sel.dimensions}</div>
                           {sel.thickness && <div><strong>Thickness:</strong> <span className="font-bold text-indigo-900">{sel.thickness}</span></div>}
-                          <div><strong>Location:</strong> {sel.location} ({sel.city})</div>
                           <div><strong>Available HQ Stock:</strong> <span className={sel.stock > 0 ? "text-emerald-700 font-bold" : "text-red-600 font-bold"}>{sel.stock} units</span></div>
                         </div>
                       );
@@ -990,6 +994,20 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                           <option value="Inks">Inks</option>
                           <option value="Films">Films</option>
                           <option value="Other">Other / Specialty Supplies</option>
+                        </select>
+                      </div>
+
+                      {/* Custom Priority */}
+                      <div className="space-y-1">
+                        <label className="block font-bold text-slate-700">Item Priority</label>
+                        <select
+                          value={customItemPriority}
+                          onChange={(e: any) => setCustomItemPriority(e.target.value)}
+                          className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        >
+                          <option value="Normal">🟢 Normal Restock</option>
+                          <option value="High Priority">🔥 High Priority</option>
+                          <option value="Emergency Restock">🚨 Emergency</option>
                         </select>
                       </div>
 
@@ -1069,7 +1087,7 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                       </div>
 
                       {/* Specific Notes */}
-                      <div className="space-y-1 sm:col-span-2 lg:col-span-1">
+                      <div className="space-y-1 sm:col-span-2 lg:col-span-2">
                         <label className="block font-bold text-slate-700">Item Notes / Remarks</label>
                         <input
                           type="text"
@@ -1140,6 +1158,29 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                                 <span>Custom Request</span>
                               </span>
                             )}
+
+                            {/* Item Priority Selector */}
+                            <select
+                              value={cartItem.priority || "Normal"}
+                              onChange={(e) => {
+                                const updated = [...requestCart];
+                                updated[idx].priority = e.target.value as any;
+                                setRequestCart(updated);
+                              }}
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border outline-none cursor-pointer transition-colors ${
+                                (cartItem.priority || "Normal") === "Emergency Restock"
+                                  ? "bg-rose-100 text-rose-800 border-rose-300"
+                                  : (cartItem.priority || "Normal") === "High Priority"
+                                  ? "bg-amber-100 text-amber-900 border-amber-300"
+                                  : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              }`}
+                              title="Set priority for this specific item"
+                            >
+                              <option value="Normal">🟢 Normal Restock</option>
+                              <option value="High Priority">🔥 High Priority</option>
+                              <option value="Emergency Restock">🚨 Emergency</option>
+                            </select>
+
                             <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">
                               {cartItem.category}
                             </span>
@@ -1522,6 +1563,19 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                           <div key={i} className={`p-3 rounded-2xl border text-xs flex justify-between items-center ${item.isCustom ? "bg-indigo-50/50 border-indigo-200" : "bg-slate-50 border-slate-100"}`}>
                             <div className="space-y-1">
                               <div className="flex flex-wrap items-center gap-1.5">
+                                {item.priority && (
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-extrabold ${
+                                      item.priority === "Emergency Restock"
+                                        ? "bg-rose-100 text-rose-800 border border-rose-300"
+                                        : item.priority === "High Priority"
+                                        ? "bg-amber-100 text-amber-900 border border-amber-300"
+                                        : "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                    }`}
+                                  >
+                                    {item.priority === "Emergency Restock" ? "🚨 Emergency" : item.priority === "High Priority" ? "🔥 High Priority" : "🟢 Normal"}
+                                  </span>
+                                )}
                                 {item.isCustom && (
                                   <span className="px-1.5 py-0.5 rounded bg-indigo-600 text-white font-extrabold text-[9px]">Custom</span>
                                 )}

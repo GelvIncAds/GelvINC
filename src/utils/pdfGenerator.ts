@@ -131,9 +131,9 @@ export function generateRequestPDF(
 
     y += 6;
     doc.setFont("helvetica", "bold");
-    doc.text("Location / City:", margin + 3, y);
+    doc.text("Dimensions / Thickness:", margin + 3, y);
     doc.setFont("helvetica", "normal");
-    doc.text(`${item.location}, ${item.city}`, margin + 42, y);
+    doc.text(`${item.dimensions || "Standard"} ${item.thickness ? `• ${item.thickness}` : ""}`, margin + 42, y);
 
     y += 6;
     doc.setFont("helvetica", "bold");
