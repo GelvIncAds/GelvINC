@@ -4,7 +4,7 @@
     "branchName": "Great Print & Sign",
     "branchCode": "GPS-02",
     "requesterName": "Jade Sumalinog",
-    "requesterEmail": "JYS@gelvinc.com",
+    "requesterEmail": "jade.gelv8@gmail.com",
     "requesterRole": "Artist",
     "requiredByDate": "2026-08-26",
     "priority": "High Priority",
@@ -25,9 +25,9 @@
     "status": "Pending HQ Review",
     "createdAt": "2026-08-21T09:04:44.231Z",
     "updatedAt": "2026-08-21T09:04:44.231Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   },
@@ -36,7 +36,7 @@
     "branchName": "GELV INC Advertising",
     "branchCode": "GELV-01",
     "requesterName": "Jade Sumalinog",
-    "requesterEmail": "JYS@gelvinc.com",
+    "requesterEmail": "jade.gelv8@gmail.com",
     "requesterRole": "Main Operations Manager",
     "requiredByDate": "2026-08-20",
     "priority": "Normal",
@@ -54,9 +54,9 @@
     "status": "Pending HQ Review",
     "createdAt": "2026-08-15T01:24:45.192Z",
     "updatedAt": "2026-08-15T01:24:45.192Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   },
@@ -65,7 +65,7 @@
     "branchName": "GELV INC Advertising",
     "branchCode": "GELV-01",
     "requesterName": "Jade HQ Admin",
-    "requesterEmail": "JYS@gelvinc.com",
+    "requesterEmail": "jade.gelv8@gmail.com",
     "requesterRole": "Main Operations Manager",
     "requiredByDate": "2026-08-20",
     "priority": "Normal",
@@ -83,9 +83,9 @@
     "status": "Pending HQ Review",
     "createdAt": "2026-08-15T01:19:32.466Z",
     "updatedAt": "2026-08-15T01:19:32.466Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   },
@@ -94,7 +94,7 @@
     "branchName": "Great Print & Sign",
     "branchCode": "GPS-02",
     "requesterName": "Angel",
-    "requesterEmail": "JYS@gelvinc.com",
+    "requesterEmail": "jade.gelv8@gmail.com",
     "requesterRole": "Branch Manager",
     "requiredByDate": "2026-08-20",
     "priority": "Normal",
@@ -112,9 +112,9 @@
     "status": "Pending HQ Review",
     "createdAt": "2026-08-15T01:18:30.406Z",
     "updatedAt": "2026-08-15T01:18:30.406Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   },
@@ -149,9 +149,9 @@
     "status": "Pending HQ Review",
     "createdAt": "2026-08-15T01:10:00.000Z",
     "updatedAt": "2026-08-15T01:10:00.000Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   },
@@ -190,7 +190,7 @@
         "title": "Materials Shipped Out for Requisition BR-554219",
         "message": "Items have been dispatched via GELV Logistics Fleet (Van #4). Driver Contact: 0917-882-9912. Waybill: TRK-GELV-88410. Estimated Delivery: Aug 16, 2026.",
         "timestamp": "2026-08-15T01:30:00.000Z",
-        "sentBy": "HQ Admin (JYS@gelvinc.com)",
+        "sentBy": "HQ Admin (jade.gelv8@gmail.com)",
         "recipientEmail": "ramon.b@greatprintsign.ph",
         "details": {
           "shippingStatus": "Shipped Out & En Route",
@@ -205,7 +205,7 @@
         "title": "Requisition BR-554219 Approved by HQ",
         "message": "HQ Supply Chain has approved your requisition for 2 units of Wind-Permeable Mesh Tarpaulin. Warehouse packing underway.",
         "timestamp": "2026-08-14T23:00:00.000Z",
-        "sentBy": "HQ Admin (JYS@gelvinc.com)",
+        "sentBy": "HQ Admin (jade.gelv8@gmail.com)",
         "recipientEmail": "ramon.b@greatprintsign.ph",
         "details": {
           "shippingStatus": "Preparing for Dispatch"
@@ -214,9 +214,9 @@
     ],
     "createdAt": "2026-08-14T22:30:00.000Z",
     "updatedAt": "2026-08-14T23:00:00.000Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   },
@@ -243,9 +243,9 @@
     "status": "Pending HQ Review",
     "createdAt": "2026-08-14T19:15:00.000Z",
     "updatedAt": "2026-08-14T19:15:00.000Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   },
@@ -272,9 +272,9 @@
     "status": "Pending HQ Review",
     "createdAt": "2026-08-14T18:40:00.000Z",
     "updatedAt": "2026-08-14T18:40:00.000Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   },
@@ -301,9 +301,9 @@
     "status": "Pending HQ Review",
     "createdAt": "2026-08-14T17:20:00.000Z",
     "updatedAt": "2026-08-14T17:20:00.000Z",
-    "dispatchedToEmail": "JYS@gelvinc.com",
+    "dispatchedToEmail": "jade.gelv8@gmail.com",
     "sentToEmails": [
-      "JYS@gelvinc.com",
+      "jade.gelv8@gmail.com",
       "admin@gelvinc.com"
     ]
   }

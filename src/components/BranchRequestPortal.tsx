@@ -776,39 +776,27 @@ export const BranchRequestPortal: React.FC<BranchRequestPortalProps> = ({
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                         Role / Position
                       </label>
-                      <span className="text-[10px] font-semibold text-slate-400">Catalog Suggested</span>
+                      <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                        Official Designation
+                      </span>
                     </div>
-                    <input
-                      type="text"
-                      list="manager-roles-catalog"
-                      required
-                      value={requesterRole}
-                      onChange={(e) => setRequesterRole(e.target.value)}
-                      placeholder="e.g. Branch Manager, Graphic Artist"
-                      className="w-full p-3 border rounded-2xl text-xs sm:text-sm text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-                    />
-                    <datalist id="manager-roles-catalog">
-                      {COMPANY_ROLES.map((role) => (
-                        <option key={role} value={role} />
-                      ))}
-                    </datalist>
-
-                    {/* Quick Role Select Chips */}
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {COMPANY_ROLES.map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          onClick={() => setRequesterRole(r)}
-                          className={`text-[10px] px-2 py-0.5 rounded-lg border font-semibold transition-all ${
-                            requesterRole === r
-                              ? "bg-blue-600 text-white border-blue-600 shadow-xs"
-                              : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200"
-                          }`}
-                        >
-                          {r}
-                        </button>
-                      ))}
+                    <div className="relative">
+                      <select
+                        required
+                        value={requesterRole}
+                        onChange={(e) => setRequesterRole(e.target.value)}
+                        className="w-full p-3 border rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer appearance-none pr-10"
+                      >
+                        <option value="" disabled>Select Role / Position</option>
+                        {COMPANY_ROLES.map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
                     </div>
                   </div>
                 </div>

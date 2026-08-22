@@ -4,7 +4,24 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
   {
     id: "EMP-001",
     uid: "uid-emp-001",
-    name: "Jade HQ Admin",
+    name: "Jade Sumalinog",
+    email: "jade.gelv8@gmail.com",
+    branchName: "GELV INC Advertising",
+    branchCode: "GELV-01",
+    role: "Admin Assistant",
+    department: "Admin & Operations",
+    phone: "+63 969 036 7593",
+    status: "Active",
+    authProvider: "password",
+    tempPassword: "Tokikaze@1",
+    createdAt: "2025-01-10T08:00:00.000Z",
+    lastLogin: new Date().toISOString(),
+    recoveryNote: "HQ Admin Assistant for GELV INC Advertising location."
+  },
+  {
+    id: "EMP-002",
+    uid: "uid-emp-002",
+    name: "Jade Executive Admin",
     email: "JYS@gelvinc.com",
     branchName: "GELV INC Advertising",
     branchCode: "GELV-01",
@@ -13,13 +30,14 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
     phone: "+63 917 889 0101",
     status: "Active",
     authProvider: "google",
+    tempPassword: "Tokikaze@1",
     createdAt: "2025-01-10T08:00:00.000Z",
     lastLogin: new Date().toISOString(),
-    recoveryNote: "Primary master admin authorized with full catalog & personnel credentials."
+    recoveryNote: "Corporate executive email account."
   },
   {
-    id: "EMP-002",
-    uid: "uid-emp-002",
+    id: "EMP-003",
+    uid: "uid-emp-003",
     name: "Marco Reyes",
     email: "gps.branch@gelvinc.com",
     branchName: "Great Print & Sign",
@@ -34,8 +52,8 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
     recoveryNote: "Lead graphic artist for Sucat Door 0 site."
   },
   {
-    id: "EMP-003",
-    uid: "uid-emp-003",
+    id: "EMP-004",
+    uid: "uid-emp-004",
     name: "Victoria Garcia",
     email: "vgf.branch@gelvinc.com",
     branchName: "VG Formera",
@@ -50,8 +68,8 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
     recoveryNote: "Branch manager for BF Homes site."
   },
   {
-    id: "EMP-004",
-    uid: "uid-emp-004",
+    id: "EMP-005",
+    uid: "uid-emp-005",
     name: "Danilo Cruz",
     email: "kulay.branch@gelvinc.com",
     branchName: "Kulay Advertising",
@@ -66,8 +84,8 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
     recoveryNote: "Operations manager & vinyl wraps supervisor."
   },
   {
-    id: "EMP-005",
-    uid: "uid-emp-005",
+    id: "EMP-006",
+    uid: "uid-emp-006",
     name: "Elena Santos",
     email: "taytay.branch@gelvinc.com",
     branchName: "Taytay Print & Sign",
