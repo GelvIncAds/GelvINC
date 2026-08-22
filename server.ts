@@ -12,10 +12,14 @@ const LOGS_FILE = path.join(DATA_DIR, "audit_logs.json");
 const INQUIRIES_FILE = path.join(DATA_DIR, "inquiries.json");
 const BRANCH_REQUESTS_FILE = path.join(DATA_DIR, "branch_requests.json");
 const EMPLOYEES_FILE = path.join(DATA_DIR, "employees.json");
+const PROVISIONED_USERS_DIR = path.join(DATA_DIR, "provisioned_users");
 
-// Ensure data directory exists
+// Ensure data directory and provisioned users directory exist
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(PROVISIONED_USERS_DIR)) {
+  fs.mkdirSync(PROVISIONED_USERS_DIR, { recursive: true });
 }
 
 // In-Memory Database initialized from file cache or initial seed
@@ -26,6 +30,56 @@ let branchRequestsDb: BranchRequest[] = [];
 let employeesDb: EmployeeAccount[] = [];
 
 const VALID_CATEGORIES = ['Tarpaulin', 'Panaflex', 'Stickers', 'Photopapers', 'Paperstocks', 'Inks', 'Films'];
+
+// Helper to write individual JSON file for every provisioned employee/user
+function saveUserProvisioningJson(user: EmployeeAccount, provisionedBy = "HQ Administrator"): { filename: string; filePath: string; payload: any } {
+  try {
+    if (!fs.existsSync(PROVISIONED_USERS_DIR)) {
+      fs.mkdirSync(PROVISIONED_USERS_DIR, { recursive: true });
+    }
+
+    const sanitizedEmail = (user.email || "user").replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
+    const filename = `${user.id || "EMP-USER"}_${sanitizedEmail}.json`;
+    const filePath = path.join(PROVISIONED_USERS_DIR, filename);
+
+    const payload = {
+      provisionId: `PROV-${Date.now().toString().slice(-6)}`,
+      employeeId: user.id,
+      uid: user.uid,
+      name: user.name,
+      email: user.email,
+      branchName: user.branchName,
+      branchCode: user.branchCode,
+      role: user.role,
+      department: user.department || "Operations",
+      phone: user.phone || "",
+      status: user.status || "Active",
+      authProvider: user.authProvider || "password",
+      tempPassword: user.tempPassword || "",
+      recoveryNote: user.recoveryNote || "",
+      createdAt: user.createdAt || new Date().toISOString(),
+      provisionedAt: new Date().toISOString(),
+      provisionedBy: provisionedBy,
+      lastLogin: user.lastLogin || null,
+      lastPasswordReset: user.lastPasswordReset || null,
+      resetRecoveryToken: user.resetRecoveryToken || null,
+      fileName: filename,
+      metadata: {
+        organization: "GELV INC Advertising",
+        system: "Enterprise Employee Provisioning Engine",
+        version: "2026.1",
+        exportTimestamp: new Date().toISOString()
+      }
+    };
+
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf-8");
+    console.log(`[Provisioning] Saved user provisioning JSON file: ${filename}`);
+    return { filename, filePath, payload };
+  } catch (err) {
+    console.error("Error creating user provisioning JSON file:", err);
+    return { filename: "", filePath: "", payload: null };
+  }
+}
 
 function loadData() {
   try {
@@ -81,11 +135,19 @@ function loadData() {
       employeesDb = [...INITIAL_EMPLOYEES];
       saveData();
     }
+
+    // Ensure all employees in the database have their JSON provisioning file written
+    employeesDb.forEach((emp) => {
+      saveUserProvisioningJson(emp, "System Bootstrapping & Directory Initialization");
+    });
   } catch (err) {
     console.error("Error loading stored database, reverting to seed:", err);
     inventoryDb = [...INITIAL_INVENTORY];
     branchRequestsDb = getSeedBranchRequests();
     employeesDb = [...INITIAL_EMPLOYEES];
+    employeesDb.forEach((emp) => {
+      saveUserProvisioningJson(emp, "System Bootstrapping Seed");
+    });
   }
 }
 
@@ -980,6 +1042,9 @@ async function startServer() {
 
     employeesDb.unshift(newEmp);
 
+    // Save dedicated JSON provisioning file for new user
+    const { filename: provFileName, payload: provPayload } = saveUserProvisioningJson(newEmp, "HQ Administrator Provisioning");
+
     auditLogs.unshift({
       id: `log-${Date.now()}`,
       itemId: newEmp.id,
@@ -988,15 +1053,17 @@ async function startServer() {
       newStock: 0,
       updatedBy: "HQ Administrator",
       timestamp: new Date().toISOString(),
-      reason: `Provisioned new employee profile (${newEmp.email}) for branch ${newEmp.branchName}`,
+      reason: `Provisioned new employee profile (${newEmp.email}) for branch ${newEmp.branchName} [File: ${provFileName}]`,
     });
 
     saveData();
 
     res.status(201).json({
       success: true,
-      message: `Employee account for ${newEmp.name} created successfully!`,
-      data: newEmp
+      message: `Employee account for ${newEmp.name} created successfully! Provisioning JSON generated: ${provFileName}`,
+      data: newEmp,
+      provisionedFile: provFileName,
+      provisionedJson: provPayload
     });
   });
 
@@ -1025,6 +1092,9 @@ async function startServer() {
       emp.lastPasswordReset = new Date().toISOString();
     }
 
+    // Update provisioning JSON file
+    const { filename: provFileName } = saveUserProvisioningJson(emp, "HQ Administrator (Profile Update)");
+
     auditLogs.unshift({
       id: `log-${Date.now()}`,
       itemId: emp.id,
@@ -1033,7 +1103,7 @@ async function startServer() {
       newStock: 0,
       updatedBy: "HQ Administrator",
       timestamp: new Date().toISOString(),
-      reason: `Updated employee credentials and role details for ${emp.email}${passToSet ? " (Updated password)" : ""}`,
+      reason: `Updated employee credentials and role details for ${emp.email}${passToSet ? " (Updated password)" : ""} [File: ${provFileName}]`,
     });
 
     saveData();
@@ -1069,6 +1139,9 @@ async function startServer() {
 
     const reasonText = adminReason ? adminReason.trim() : "Admin manual password update";
     emp.recoveryNote = `${reasonText} (Password manually set on ${new Date().toLocaleDateString()})`;
+
+    // Update provisioning JSON file
+    saveUserProvisioningJson(emp, "HQ Administrator (Manual Password Set)");
 
     auditLogs.unshift({
       id: `log-${Date.now()}`,
@@ -1242,9 +1315,99 @@ async function startServer() {
     };
 
     employeesDb.unshift(newEmp);
+    const { filename: provFileName, payload: provPayload } = saveUserProvisioningJson(newEmp, "User Authentication Self-Registration");
     saveData();
 
-    res.status(201).json({ success: true, message: "New employee auto-registered", data: newEmp });
+    res.status(201).json({
+      success: true,
+      message: "New employee auto-registered and provisioning JSON created",
+      data: newEmp,
+      provisionedFile: provFileName,
+      provisionedJson: provPayload
+    });
+  });
+
+  // GET /api/admin/provisioned-users - List all generated user provisioning JSON files
+  app.get("/api/admin/provisioned-users", (_req, res) => {
+    try {
+      if (!fs.existsSync(PROVISIONED_USERS_DIR)) {
+        fs.mkdirSync(PROVISIONED_USERS_DIR, { recursive: true });
+      }
+
+      const files = fs.readdirSync(PROVISIONED_USERS_DIR).filter(f => f.endsWith(".json"));
+      const records = files.map(file => {
+        const fullPath = path.join(PROVISIONED_USERS_DIR, file);
+        const stats = fs.statSync(fullPath);
+        let content: any = null;
+        try {
+          content = JSON.parse(fs.readFileSync(fullPath, "utf-8"));
+        } catch {
+          // invalid json fallback
+        }
+        return {
+          fileName: file,
+          sizeBytes: stats.size,
+          createdAt: stats.birthtime,
+          updatedAt: stats.mtime,
+          employeeId: content?.employeeId || file.split("_")[0],
+          name: content?.name || "Unknown",
+          email: content?.email || "Unknown",
+          role: content?.role || "Staff",
+          branchName: content?.branchName || "HQ",
+          provisionedAt: content?.provisionedAt || stats.birthtime,
+          provisionedBy: content?.provisionedBy || "HQ Administrator",
+          content
+        };
+      }).sort((a, b) => new Date(b.provisionedAt).getTime() - new Date(a.provisionedAt).getTime());
+
+      res.json({
+        success: true,
+        count: records.length,
+        data: records,
+        directory: ".data/provisioned_users"
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Failed to list provisioned user files" });
+    }
+  });
+
+  // GET /api/admin/provisioned-users/:filename - Download or view specific JSON file
+  app.get("/api/admin/provisioned-users/:filename", (req, res) => {
+    try {
+      const filename = path.basename(req.params.filename);
+      const filePath = path.join(PROVISIONED_USERS_DIR, filename);
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ success: false, error: "Provisioned user JSON file not found" });
+      }
+
+      if (req.query.download === "true") {
+        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        res.setHeader("Content-Type", "application/json");
+        return res.sendFile(filePath);
+      }
+
+      const raw = fs.readFileSync(filePath, "utf-8");
+      const json = JSON.parse(raw);
+      res.json({ success: true, fileName: filename, data: json });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Failed to read provisioned user JSON file" });
+    }
+  });
+
+  // GET /api/admin/provisioned-users/by-id/:id - Fetch or generate JSON for employee
+  app.get("/api/admin/provisioned-users/by-id/:id", (req, res) => {
+    try {
+      const emp = employeesDb.find(e => e.id === req.params.id || e.email.toLowerCase() === req.params.id.toLowerCase());
+      if (!emp) {
+        return res.status(404).json({ success: false, error: "Employee account not found" });
+      }
+
+      const { filename, payload } = saveUserProvisioningJson(emp, "HQ User Query Archive");
+      res.json({ success: true, fileName: filename, data: payload });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
   });
 
   // === VITE / STATIC MIDDLEWARE ===

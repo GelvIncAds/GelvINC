@@ -25,7 +25,12 @@ import {
   ShieldAlert,
   Send,
   Eye,
-  EyeOff
+  EyeOff,
+  FileJson,
+  Download,
+  FileCode,
+  Clock,
+  FolderArchive
 } from "lucide-react";
 
 interface AdminEmployeeManagerProps {
@@ -49,6 +54,13 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
   const [showQuickPassword, setShowQuickPassword] = useState<boolean>(false);
   const [copiedQuickCreds, setCopiedQuickCreds] = useState<boolean>(false);
   const [assignedCredsData, setAssignedCredsData] = useState<{ email: string; name: string; pass: string } | null>(null);
+
+  // Provisioning JSON Viewer states
+  const [selectedUserJson, setSelectedUserJson] = useState<{ fileName: string; data: any } | null>(null);
+  const [copiedJsonText, setCopiedJsonText] = useState<boolean>(false);
+  const [showAllProvisionedFilesModal, setShowAllProvisionedFilesModal] = useState<boolean>(false);
+  const [provisionedFilesList, setProvisionedFilesList] = useState<any[]>([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState<boolean>(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -249,7 +261,7 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
         const json = await res.json();
         if (!json.success) throw new Error(json.error || "Failed to create employee");
 
-        showToast(`Employee ${formData.name} successfully provisioned!`);
+        showToast(`Employee ${formData.name} successfully provisioned! JSON file created: ${json.provisionedFile || "user record saved"}`);
         setShowCreateModal(false);
       }
 
@@ -258,6 +270,57 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
       setFormError(err.message || "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // View individual provisioned JSON record
+  const handleViewEmployeeJson = async (emp: EmployeeAccount) => {
+    try {
+      const res = await fetch(`/api/admin/provisioned-users/by-id/${emp.id}`);
+      const json = await res.json();
+      if (json.success) {
+        setSelectedUserJson({ fileName: json.fileName, data: json.data });
+      } else {
+        setSelectedUserJson({
+          fileName: `${emp.id}_${emp.email.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`,
+          data: emp
+        });
+      }
+    } catch {
+      setSelectedUserJson({
+        fileName: `${emp.id}_${emp.email.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`,
+        data: emp
+      });
+    }
+  };
+
+  // Download JSON directly from browser
+  const handleDownloadJson = (fileName: string, data: any) => {
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(data, null, 2)
+    )}`;
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", jsonString);
+    downloadAnchor.setAttribute("download", fileName || "provisioned_user.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  // Open full list of generated JSON files
+  const handleOpenAllProvisionedFiles = async () => {
+    setShowAllProvisionedFilesModal(true);
+    setIsLoadingFiles(true);
+    try {
+      const res = await fetch("/api/admin/provisioned-users");
+      const json = await res.json();
+      if (json.success) {
+        setProvisionedFilesList(json.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load provisioned JSON files:", err);
+    } finally {
+      setIsLoadingFiles(false);
     }
   };
 
@@ -337,6 +400,15 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleOpenAllProvisionedFiles}
+              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-blue-300 text-xs font-bold rounded-xl border border-slate-700 transition-colors flex items-center space-x-2 shadow-sm"
+              title="View & Download JSON files created for each provisioned user"
+            >
+              <FileJson className="w-4 h-4 text-blue-400" />
+              <span>Provisioned JSON Files</span>
+            </button>
+
             <button
               onClick={fetchEmployees}
               className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition-colors flex items-center space-x-2"
@@ -543,6 +615,15 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end space-x-1.5">
+                          {/* View & Download Provisioning JSON Record */}
+                          <button
+                            onClick={() => handleViewEmployeeJson(emp)}
+                            title="View / Download Provisioning JSON Record File"
+                            className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                          >
+                            <FileJson className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Quick Set Password Button */}
                           <button
                             onClick={() => handleOpenSetPasswordModal(emp)}
@@ -943,6 +1024,219 @@ export const AdminEmployeeManager: React.FC<AdminEmployeeManagerProps> = ({ onSw
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* INDIVIDUAL PROVISIONED USER JSON MODAL */}
+      {selectedUserJson && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-blue-500/30 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <FileJson className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-base font-extrabold text-white">Provisioned User JSON Record</h3>
+                    <span className="text-[10px] font-mono bg-blue-950/80 text-blue-300 border border-blue-800/60 px-2 py-0.5 rounded-full font-bold">
+                      {selectedUserJson.fileName}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Individual structured record automatically generated on user provisioning
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(selectedUserJson.data, null, 2));
+                    setCopiedJsonText(true);
+                    setTimeout(() => setCopiedJsonText(false), 2500);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition-colors flex items-center space-x-1.5"
+                >
+                  {copiedJsonText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedJsonText ? "Copied!" : "Copy JSON"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDownloadJson(selectedUserJson.fileName, selectedUserJson.data)}
+                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold shadow-md transition-all flex items-center space-x-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download .json</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedUserJson(null)}
+                  className="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs font-bold ml-1"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Code Block Content */}
+            <div className="p-5 overflow-y-auto max-h-[60vh] bg-slate-950 font-mono text-xs text-blue-200/90 leading-relaxed">
+              <pre className="whitespace-pre-wrap select-all">
+                {JSON.stringify(selectedUserJson.data, null, 2)}
+              </pre>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400">
+              <span className="flex items-center space-x-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Saved path: <code className="text-slate-300 font-mono">.data/provisioned_users/{selectedUserJson.fileName}</code></span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedUserJson(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors"
+              >
+                Close Viewer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ALL PROVISIONED JSON FILES ARCHIVE MODAL */}
+      {showAllProvisionedFilesModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center space-x-3">
+                <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <FolderArchive className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-extrabold text-white">Provisioned User JSON Archive</h3>
+                    <span className="text-xs font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full font-mono">
+                      {provisionedFilesList.length} Files
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Physical location: <code className="text-blue-300 font-mono">.data/provisioned_users/</code> (Created on every user provision)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleOpenAllProvisionedFiles}
+                  disabled={isLoadingFiles}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition-colors flex items-center space-x-1.5"
+                >
+                  <RefreshCcw className={`w-3.5 h-3.5 ${isLoadingFiles ? "animate-spin text-blue-400" : ""}`} />
+                  <span>Refresh</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAllProvisionedFilesModal(false)}
+                  className="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-sm font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* List Table */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {isLoadingFiles ? (
+                <div className="py-12 text-center text-slate-400 text-xs flex flex-col items-center justify-center space-y-3">
+                  <RefreshCcw className="w-6 h-6 animate-spin text-blue-400" />
+                  <span>Scanning .data/provisioned_users directory...</span>
+                </div>
+              ) : provisionedFilesList.length === 0 ? (
+                <div className="py-12 text-center text-slate-500 text-xs">
+                  No provisioned user JSON files found in archive.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {provisionedFilesList.map((file) => (
+                    <div
+                      key={file.fileName}
+                      className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 hover:border-blue-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="flex items-start space-x-3.5">
+                        <div className="w-9 h-9 rounded-xl bg-blue-950/60 border border-blue-800/50 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+                          <FileCode className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono text-xs font-extrabold text-white">
+                              {file.fileName}
+                            </span>
+                            <span className="text-[10px] text-slate-400 bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded font-mono">
+                              {file.sizeBytes} B
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="text-slate-200 font-semibold">{file.name}</span>
+                            <span className="text-blue-400">({file.email})</span>
+                            <span className="text-slate-500">•</span>
+                            <span className="text-slate-300">{file.role}</span>
+                            <span className="text-slate-500">•</span>
+                            <span className="text-slate-400">{file.branchName}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-1 flex items-center space-x-1.5">
+                            <Clock className="w-3 h-3 text-slate-600" />
+                            <span>Provisioned: {new Date(file.provisionedAt).toLocaleString()}</span>
+                            <span>•</span>
+                            <span>By: {file.provisionedBy}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 self-end sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedUserJson({ fileName: file.fileName, data: file.content || file });
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-bold transition-colors flex items-center space-x-1.5"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View JSON</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadJson(file.fileName, file.content || file)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-colors flex items-center space-x-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400">
+              <span>Automatic JSON serialization executes synchronously whenever a user is provisioned or auto-registered.</span>
+              <button
+                type="button"
+                onClick={() => setShowAllProvisionedFilesModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors"
+              >
+                Close Archive
+              </button>
+            </div>
           </div>
         </div>
       )}

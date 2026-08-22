@@ -49,6 +49,8 @@ interface AuthContextType {
   setAuthError: (err: string | null) => void;
   authSuccessMessage: string | null;
   setAuthSuccessMessage: (msg: string | null) => void;
+  redirectToProfileTrigger: number;
+  triggerProfileRedirect: () => void;
 }
 
 const ADMIN_EMAILS = [
@@ -87,6 +89,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signup");
   const [showAdminPasscodeModal, setShowAdminPasscodeModal] = useState<boolean>(false);
+  const [redirectToProfileTrigger, setRedirectToProfileTrigger] = useState<number>(0);
+
+  const triggerProfileRedirect = () => {
+    setRedirectToProfileTrigger((prev) => prev + 1);
+  };
 
   // Sync state to local storage
   useEffect(() => {
@@ -102,6 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isAdmin]);
 
   const openSignInModal = () => {
+    // If user is already logged in, do not show login screen; forward straight to their profile
+    if (user) {
+      triggerProfileRedirect();
+      return;
+    }
     setAuthError(null);
     setAuthSuccessMessage(null);
     setAuthModalTab("signin");
@@ -109,6 +121,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const openSignUpModal = () => {
+    // If user is already logged in, forward to their profile
+    if (user) {
+      triggerProfileRedirect();
+      return;
+    }
     setAuthError(null);
     setAuthSuccessMessage(null);
     setAuthModalTab("signup");
@@ -290,6 +307,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         branchCode: isUserAdmin ? "GELV-01" : branchCode,
         role: isUserAdmin ? "CEO" : userRole,
       };
+
+      // Sync to backend to generate persistent employee record and individual JSON provisioning file
+      try {
+        await fetch("/api/admin/employees/sync-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            email: normalizedEmail,
+            branchName: signedUpUser.branchName,
+            branchCode: signedUpUser.branchCode,
+            role: signedUpUser.role,
+            picture: photoURL,
+            authProvider: "password"
+          })
+        });
+      } catch (syncErr) {
+        console.warn("Backend user provisioning sync warning:", syncErr);
+      }
 
       setUser(signedUpUser);
       if (isUserAdmin) setIsAdmin(true);
